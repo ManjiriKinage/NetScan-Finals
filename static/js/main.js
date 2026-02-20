@@ -244,12 +244,26 @@ async function pollStatus(jobId) {
 }
 
 
-  if (data.status === 'done' || data.status === 'error' || data.status === 'cancelled') {
+if (data.status === 'done' || data.status === 'cancelled') {
 
   appendLog('Job finished: ' + data.status);
 
-  resetUI();
+  if (pollInterval) clearInterval(pollInterval);
 
+  isScanning = false;
+  currentJob = null;
+
+  // Reset only button + status (NOT pdf)
+  scanBtn.innerHTML = "Start Scan";
+  scanBtn.classList.remove("bg-rose-600");
+  scanBtn.classList.add("from-rose-500","via-orange-400","to-amber-300");
+
+  const mail = document.getElementById("mailStatus");
+  if (mail) {
+    mail.textContent = "Completed";
+    mail.className =
+      "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+  }
 } 
   } catch (e) {
     appendLog('Status poll failed: ' + e);
@@ -259,8 +273,4 @@ async function pollStatus(jobId) {
 }
 
 scanBtn.addEventListener('click', startScan);
-cancelBtn && cancelBtn.addEventListener('click', () => {
-  if (pollInterval) clearInterval(pollInterval);
-  appendLog('Scan cancelled (client-side).');
-  scanBtn.disabled = false;
-});
+
