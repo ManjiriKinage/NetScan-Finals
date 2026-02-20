@@ -13,9 +13,42 @@
   <body class="bg-slate-700 min-h-screen text-slate-800 overflow-x-hidden">
 
     <div class="container mx-auto p-6">
-      <header class="mb-6">
-        <h1 class="text-2xl font-bold text-white">NetScan - Local Vulnerability Scanner</h1>
-      </header>
+      <header class="mb-6 flex items-center justify-between">
+
+  <!-- LEFT SIDE: TITLE -->
+  <h1 class="text-2xl font-bold text-white">
+    NetScan - Local Vulnerability Scanner
+  </h1>
+
+  <!-- RIGHT SIDE: MODE + LOGOUT -->
+  <div class="flex items-center gap-4">
+
+    <!-- Mode Badge -->
+    {% if session.get("role") == "admin" %}
+  <span class="px-3 py-1 rounded-full bg-sky-600 text-white text-xs font-medium">
+  <span class="flex items-center gap-2 px-3 py-1 rounded-full bg-sky-600 text-white text-xs font-medium">
+  👤 {{ session.get("name") }}
+</span>
+  </span>
+{% elif session.get("role") == "guest" %}
+  <span class="px-3 py-1 rounded-full bg-slate-600 text-white text-xs font-medium">
+    Guest
+  </span>
+{% endif %}
+
+    <!-- Logout -->
+   <a href="/logout"
+   class="px-4 py-2 rounded-md text-sm font-medium
+   bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300
+   text-slate-900
+   hover:from-rose-600 hover:to-amber-400
+   transition duration-300 shadow-md">
+   Logout
+</a>
+
+  </div>
+
+</header>
 
       {% block content %}{% endblock %}
     </div>
