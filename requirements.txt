@@ -1,0 +1,5 @@
+Flask>=2.0
+python-nmap
+fpdf2
+tqdm
+python-dotenv

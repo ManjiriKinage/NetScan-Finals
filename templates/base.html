@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NetScan - Vulnerability Scanner</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <!-- CHANGE HERE: bg-slate-50 → bg-blue-50 -->
+  <body class="bg-slate-700 min-h-screen text-slate-800">
+
+    <div class="container mx-auto p-6">
+      <header class="mb-6">
+        <h1 class="text-2xl font-bold text-white">NetScan - Local Vulnerability Scanner</h1>
+      </header>
+
+      {% block content %}{% endblock %}
+    </div>
+
+  </body>
+</html>
