@@ -2,58 +2,68 @@ class TroubleshootAgent:
 
     def diagnose(self, report_text):
 
+        if not report_text:
+            return "No scan report found. Please upload a report first."
+
         return f"""
-Vulnerability Troubleshooting Guide
+Network Vulnerability Troubleshooting Guide
 
-If Issues Still Exist, Check:
+Based on your scan report, follow these steps if issues still exist.
 
-1. Patch Not Applied
-   - Verify updates installed
-   - Reboot system
-   - Check package versions
+1. Open Ports Still Visible
+   - Run: nmap -sS -sV <IP>
+   - Check firewall rules
+   - Verify port forwarding on router
 
 2. Service Still Running
-   - systemctl status <service>
-   - tasklist /services
-   - netstat -tulpn
+   - Linux: systemctl status <service>
+   - Windows: sc query <service>
+   - Disable unnecessary services
 
-3. Firewall Misconfigured
+3. Patch Not Applied
+   - Verify OS updates
+   - Reboot system
+   - Check software version
+
+4. Firewall Not Working
    - ufw status verbose
    - iptables -L
    - Windows Firewall rules
 
-4. Port Reopened by App
-   - Check startup services
-   - Disable auto-restart
+5. Weak Authentication
+   - Check SSH/RDP configs
+   - Disable password login
+   - Enable MFA
 
-5. False Positive
+6. False Positives
    - Re-scan manually
-   - Cross-check with NVD
+   - Cross-check CVE/NVD
+   - Verify banner info
 
-6. Config Not Saved
+7. Configuration Not Saved
    - Restart service
-   - Re-apply configs
+   - Reload configs
+   - Validate syntax
 
-7. Network Device Issue
-   - Router rules
-   - Port forwarding
+8. Network Device Issues
+   - Router ACL rules
+   - NAT configuration
+   - VPN policies
 
-8. Permission Errors
-   - Run as admin/root
-   - Check SELinux/AppArmor
-
-Debug Commands:
+Useful Commands:
 
 Linux:
   sudo netstat -tulpn
   sudo ss -lntp
-  sudo systemctl status
+  sudo journalctl -xe
 
 Windows:
   netstat -ano
-  sc query
   Get-Service
+  Get-NetFirewallRule
 
 Report Context:
-{report_text[:1200]}
+{report_text[:1500]}
+
+If problems continue, share specific error messages for deeper analysis.
 """

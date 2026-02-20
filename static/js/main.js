@@ -321,12 +321,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const div = document.createElement("div");
   div.className = cls;
 
+  // Preserve formatting
+  div.style.whiteSpace = "pre-wrap";
+  div.style.wordBreak = "break-word";
+
   let i = 0;
 
   function type() {
     if (i < text.length) {
-      div.innerText += text.charAt(i++);
-      setTimeout(type, 8);
+      div.textContent += text.charAt(i++);
+      setTimeout(type, 6);
     }
   }
 

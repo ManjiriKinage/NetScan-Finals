@@ -108,3 +108,8 @@ pre { white-space: pre-wrap; word-wrap: break-word; }
   padding:5px;
   color:#38bdf8;
 }
+#netbot-messages {
+  display: flex;
+  flex-direction: column;
+  white-space: pre-wrap;
+}
