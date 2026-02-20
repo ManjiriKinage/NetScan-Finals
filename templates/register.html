@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex bg-slate-900 text-white overflow-hidden">
+
+  <!-- LEFT SIDE – AUTH BOX -->
+  <div class="w-1/2 flex items-center justify-center bg-slate-900 relative">
+
+    <div class="bg-slate-800/70 backdrop-blur-xl 
+    border border-slate-700 shadow-2xl 
+    p-10 rounded-2xl w-[420px] transition duration-500 hover:scale-[1.02]">
+
+      <h2 class="text-2xl font-semibold mb-6 text-center">
+        Create Admin Account
+      </h2>
+
+      <div class="space-y-4">
+        <input id="name" placeholder="Full Name"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+
+        <input id="phone" placeholder="Phone Number"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+
+        <input id="email" placeholder="Email"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+
+        <input id="password" type="password" placeholder="Password"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+      </div>
+
+      <button onclick="register()" 
+        class="mt-6 w-full py-3 rounded-lg font-medium
+        bg-sky-600 hover:bg-sky-700 
+        transition duration-300 shadow-lg">
+        Register
+      </button>
+
+      <p class="text-center text-sm text-slate-400 mt-6">
+        Already have an account?
+        <a href="/login" class="text-sky-400 hover:text-sky-300 transition">
+          Login
+        </a>
+      </p>
+
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE – MOVING TEXT -->
+  <div class="w-1/2 flex items-center justify-center bg-slate-800 relative overflow-hidden">
+
+    <div class="absolute inset-0 opacity-20">
+      <div class="animate-marquee whitespace-nowrap text-3xl font-semibold text-sky-400">
+        Network Security • Real-Time Threat Detection • CVE Intelligence • 
+        Service Fingerprinting • Risk Prioritization • AI Summary • 
+        Secure Startup Infrastructure • 
+      </div>
+    </div>
+
+    <div class="relative z-10 text-center px-12">
+      <h1 class="text-4xl font-bold mb-6">
+        NetScan Security Platform
+      </h1>
+      <p class="text-slate-300 text-lg leading-relaxed">
+        Built for startups who need powerful vulnerability scanning
+        without complex enterprise tools.
+      </p>
+    </div>
+
+  </div>
+
+<script>
+async function register(){
+  const res = await fetch("/admin/register", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      name: name.value,
+      phone: phone.value,
+      email: email.value,
+      password: password.value
+    })
+  });
+
+  if(res.ok){
+    window.location.href="/login";
+  } else {
+    alert("Registration failed");
+  }
+}
+</script>
+
+<style>
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 15s linear infinite;
+}
+</style>
+
+</body>
+</html>

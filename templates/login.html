@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen flex bg-slate-900 text-white overflow-hidden">
+
+  <!-- LEFT SIDE – LOGIN BOX -->
+  <div class="w-1/2 flex items-center justify-center bg-slate-900 relative">
+
+    <div class="bg-slate-800/70 backdrop-blur-xl 
+    border border-slate-700 shadow-2xl 
+    p-10 rounded-2xl w-[420px] transition duration-500 hover:scale-[1.02]">
+
+      <h2 class="text-2xl font-semibold mb-6 text-center">
+        Admin Login
+      </h2>
+
+      <div class="space-y-4">
+        <input id="email" type="email" placeholder="Email"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+
+        <input id="password" type="password" placeholder="Password"
+          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
+          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
+          transition duration-300 outline-none">
+      </div>
+
+      <button onclick="login()" 
+        class="mt-6 w-full py-3 rounded-lg font-medium
+        bg-sky-600 hover:bg-sky-700 
+        transition duration-300 shadow-lg">
+        Login
+      </button>
+
+      <div class="text-center mt-4">
+        <a href="/guest" class="text-slate-400 hover:text-sky-400 transition text-sm">
+          Continue as Guest
+        </a>
+      </div>
+
+      <p class="text-center text-sm text-slate-400 mt-6">
+        Don’t have an account?
+        <a href="/register" class="text-sky-400 hover:text-sky-300 transition">
+          Register
+        </a>
+      </p>
+
+    </div>
+  </div>
+
+  <!-- RIGHT SIDE – MOVING TEXT -->
+  <div class="w-1/2 flex items-center justify-center bg-slate-800 relative overflow-hidden">
+
+    <!-- Moving keywords -->
+    <div class="absolute inset-0 opacity-20">
+      <div class="animate-marquee whitespace-nowrap text-3xl font-semibold text-sky-400">
+        Real-Time Network Monitoring • CVE Intelligence • 
+        Threat Detection • Vulnerability Scanning • 
+        AI Risk Summary • Startup Security • 
+        Automated Reports • 
+      </div>
+    </div>
+
+    <!-- Static center content -->
+    <div class="relative z-10 text-center px-12">
+      <h1 class="text-4xl font-bold mb-6">
+        Secure Your Network
+      </h1>
+      <p class="text-slate-300 text-lg leading-relaxed">
+        NetScan helps startups detect vulnerabilities,
+        prioritize risks, and secure infrastructure
+        with intelligent scanning.
+      </p>
+    </div>
+
+  </div>
+
+<script>
+async function login(){
+  const res = await fetch("/admin/login", {
+    method:"POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      email: email.value,
+      password: password.value
+    })
+  });
+
+  if(res.ok){
+    window.location.href="/";
+  } else {
+    alert("Invalid credentials");
+  }
+}
+</script>
+
+<style>
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 15s linear infinite;
+}
+</style>
+
+</body>
+</html>

@@ -9,7 +9,17 @@ from scanner import scan_network  # updated scanner that supports progress_callb
 from ai_engine import summarize_report
 from emailer import send_report
 
+from dotenv import load_dotenv
+load_dotenv()
+from supabase import create_client
+from flask import session, redirect, url_for
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -19,9 +29,11 @@ jobs = {}
 
 @app.route("/")
 def index():
+    if not session.get("role"):
+        return redirect("/login")
     return render_template("index.html")
 
-def run_scan_job(job_id, subnet):
+def run_scan_job(job_id, subnet,role):
     # YAHI SE CONTEXT DENA HAI
     with app.app_context():
         try:
@@ -52,9 +64,18 @@ def run_scan_job(job_id, subnet):
             jobs[job_id]["ai_summary"] = ai_summary
             # generate pdf
             pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
-            sender = os.getenv("MAIL_USER")
-            password = os.getenv("MAIL_PASS")
-            receiver = os.getenv("MAIL_TO")
+            
+            if role == "admin":
+                sender = os.getenv("MAIL_USER")
+                password = os.getenv("MAIL_PASS")
+                receiver = os.getenv("MAIL_TO")
+
+                if sender and password and receiver:
+                    try:
+                        send_report(sender, password, receiver, pdf_path)
+                        jobs[job_id]['logs'].append("Report emailed successfully.")
+                    except Exception as e:
+                        jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
             if sender and password and receiver:
                 try:
@@ -88,6 +109,10 @@ def run_scan_job(job_id, subnet):
 
 @app.route("/scan", methods=["POST"])
 def start_scan():
+    role = session.get("role")
+
+    if not role:
+        return jsonify({"error": "Unauthorized"}), 401
     data = request.get_json(silent=True) or {}
     subnet = data.get("subnet")
     if not subnet:
@@ -106,7 +131,8 @@ def start_scan():
     }
 
     # start background thread
-    thread = threading.Thread(target=run_scan_job, args=(job_id, subnet), daemon=True)
+    role = session.get("role")
+    thread = threading.Thread(target=run_scan_job, args=(job_id, subnet, role), daemon=True)
     thread.start()
 
     return jsonify({"job_id": job_id}), 202
@@ -152,5 +178,52 @@ def health():
         "email": bool(os.getenv("MAIL_USER")),
         "nvd": bool(os.getenv("NVD_API_KEY"))
     })  
+@app.route("/login")
+def login_page():
+    return render_template("login.html")
+@app.route("/register")
+def register_page():
+    return render_template("register.html")
+@app.route("/admin/register", methods=["POST"])
+def admin_register():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    res = supabase.auth.sign_up({
+        "email": email,
+        "password": password
+    })
+
+    if res.user:
+        return jsonify({"status": "registered"})
+
+    return jsonify({"error": "Registration failed"}), 400
+@app.route("/admin/login", methods=["POST"])
+def admin_login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    res = supabase.auth.sign_in_with_password({
+        "email": email,
+        "password": password
+    })
+
+    if res.user:
+        session["user"] = email
+        session["role"] = "admin"
+        session["token"] = res.session.access_token
+        return jsonify({"status": "ok"})
+
+    return jsonify({"error": "Invalid credentials"}), 401
+@app.route("/guest")
+def guest_mode():
+    session["role"] = "guest"
+    return redirect(url_for("index"))
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
