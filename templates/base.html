@@ -6,10 +6,11 @@
     <title>NetScan - Vulnerability Scanner</title>
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
   </head>
 
   <!-- CHANGE HERE: bg-slate-50 → bg-blue-50 -->
-  <body class="bg-slate-700 min-h-screen text-slate-800">
+  <body class="bg-slate-700 min-h-screen text-slate-800 overflow-x-hidden">
 
     <div class="container mx-auto p-6">
       <header class="mb-6">
@@ -19,5 +20,31 @@
       {% block content %}{% endblock %}
     </div>
 
+    <!-- NetBot Widget -->
+  <div id="netbot-btn">🤖</div>
+
+  <div id="netbot-panel">
+
+    <div id="netbot-header">
+      NetBot AI
+      <span id="netbot-close">✖</span>
+    </div>
+
+    <div id="netbot-messages"></div>
+
+    <div id="netbot-input">
+
+      <label id="netbot-upload">
+        📎
+        <input type="file" id="netbot-file" hidden accept=".pdf" />
+      </label>
+
+      <input id="netbot-text" placeholder="Ask about vulnerabilities..." />
+
+      <button id="netbot-send">➤</button>
+
+    </div>
+
+  </div>
   </body>
 </html>

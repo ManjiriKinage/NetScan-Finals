@@ -16,6 +16,7 @@ const statReports = document.getElementById('statReports');
 let pollInterval = null;
 let currentJob = null;
 let isScanning = false;
+let netbotPdfPath = null;
 
 function appendLog(text) {
   const time = new Date().toLocaleTimeString();
@@ -149,6 +150,24 @@ function resetUI() {
   // Reset progress
   if (progressBar) progressBar.style.width = "0%";
 }
+
+async function sendToNetBot(msg) {
+
+  const res = await fetch("/netbot/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session: "user_" + Date.now(),
+      message: msg,
+      pdf_path: netbotPdfPath
+    })
+  });
+
+  const data = await res.json();
+
+  return data.reply;
+}
+
 async function pollStatus(jobId) {
   try {
     const res = await fetch(`/status/${jobId}`);
@@ -274,3 +293,109 @@ if (data.status === 'done' || data.status === 'cancelled') {
 
 scanBtn.addEventListener('click', startScan);
 
+// NETBOT UI (Safe Init)
+document.addEventListener("DOMContentLoaded", () => {
+
+  const netBtn = document.getElementById("netbot-btn");
+  const netPanel = document.getElementById("netbot-panel");
+  const netClose = document.getElementById("netbot-close");
+
+  const netSend = document.getElementById("netbot-send");
+  const netInput = document.getElementById("netbot-text");
+  const netMsg = document.getElementById("netbot-messages");
+  const netFile = document.getElementById("netbot-file");
+
+  // If NetBot not present on page → skip safely
+  if (!netBtn || !netPanel) return;
+
+  netBtn.onclick = () => {
+    netPanel.style.display = "flex";
+  };
+
+  netClose.onclick = () => {
+    netPanel.style.display = "none";
+  };
+
+  function addMsg(text, cls) {
+
+    const div = document.createElement("div");
+    div.className = cls;
+    div.innerText = text;
+
+    netMsg.appendChild(div);
+    netMsg.scrollTop = netMsg.scrollHeight;
+  }
+
+  async function sendNetBot() {
+
+  const msg = netInput.value.trim();
+  if (!msg) return;
+
+  addMsg(msg, "netbot-user");
+  netInput.value = "";
+
+  try {
+
+    // Upload PDF only once
+    if (netFile.files.length > 0 && !netbotPdfPath) {
+
+      const file = netFile.files[0];
+
+      const buffer = await file.arrayBuffer();
+      const blob = new Blob([buffer], { type: file.type });
+
+      const form = new FormData();
+      form.append("file", blob, file.name);
+
+      const upload = await fetch("/netbot/upload", {
+        method: "POST",
+        body: form
+      });
+
+      if (!upload.ok) {
+        addMsg("⚠️ PDF upload failed.", "netbot-bot");
+        return;
+      }
+
+      const up = await upload.json();
+
+      netbotPdfPath = up.path;
+      netFile.value = "";
+    }
+
+    // Send message AFTER upload
+    const res = await fetch("/netbot/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: msg,
+        context: [],
+        pdf_path: netbotPdfPath
+      })
+    });
+
+    if (!res.ok) {
+      addMsg("⚠️ NetBot server error.", "netbot-bot");
+      return;
+    }
+
+    const data = await res.json();
+
+    addMsg(data.reply, "netbot-bot");
+
+  } catch (err) {
+
+    console.error(err);
+    addMsg("⚠️ Network error.", "netbot-bot");
+  }
+}
+
+  if (netSend) netSend.onclick = sendNetBot;
+
+  if (netInput) {
+    netInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") sendNetBot();
+    });
+  }
+
+});
