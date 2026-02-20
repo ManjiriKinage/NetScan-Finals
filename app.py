@@ -184,18 +184,45 @@ def login_page():
 @app.route("/register")
 def register_page():
     return render_template("register.html")
+
+import re
+
+def is_strong_password(password):
+    """
+    Password rules:
+    - At least 8 characters
+    - At least 1 uppercase
+    - At least 1 lowercase
+    - At least 1 digit
+    - At least 1 special character
+    """
+    if len(password) < 8:
+        return False
+
+    pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).+$'
+    return re.match(pattern, password)
+
 @app.route("/admin/register", methods=["POST"])
 def admin_register():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
-
+    name = data.get("name")
+    phone = data.get("phone")
+     #  Password strength check
+    if not is_strong_password(password):
+        return jsonify({
+            "error": "Password must be 8+ chars, include uppercase, lowercase, number and special character."
+        }), 400
+        
     res = supabase.auth.sign_up({
         "email": email,
         "password": password
     })
 
-    if res.user:
+    if res.user:  
+        session["name"] = name
+        session["role"] = "admin" 
         return jsonify({"status": "registered"})
 
     return jsonify({"error": "Registration failed"}), 400
@@ -214,7 +241,11 @@ def admin_login():
         session["user"] = email
         session["role"] = "admin"
         session["token"] = res.session.access_token
+        
+        session["name"] = email.split("@")[0]
         return jsonify({"status": "ok"})
+       
+        
 
     return jsonify({"error": "Invalid credentials"}), 401
 @app.route("/guest")
