@@ -66,7 +66,6 @@ def run_scan_job(job_id, subnet,role):
             ai_summary = summarize_report(report)
             jobs[job_id]["ai_summary"] = ai_summary
             # generate pdf
-            pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
             
             if role == "admin":
                 sender = os.getenv("MAIL_USER")
@@ -80,12 +79,6 @@ def run_scan_job(job_id, subnet,role):
                     except Exception as e:
                         jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
-            if sender and password and receiver:
-                try:
-                    send_report(sender, password, receiver, pdf_path)
-                    jobs[job_id]['logs'].append("Report emailed successfully.")
-                except Exception as e:
-                    jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
             # Generate PDF only if something exists
             if report and len(report) > 0:

@@ -6,18 +6,24 @@ from netbot.agents.pdf_agent import PDFAgent
 from netbot.mcp_orchestrator import MCP
 from collections import defaultdict
 from netbot.agents.risk_agent import RiskAgent
+from netbot.agents.remediation_agent import RemediationAgent
+from netbot.agents.troubleshoot_agent import TroubleshootAgent
+from netbot.agents.scan_agent import ScanAgent
 
 # Session memory
 SESSIONS = defaultdict(list)
-
+SCAN_JOBS = {}
 netbot_bp = Blueprint("netbot", __name__)
 
 intent = IntentAgent()
-
+scan_agent = ScanAgent()
 agents = {
     "ai": AIAgent(),
     "pdf": PDFAgent(),
-    "risk": RiskAgent()
+    "risk": RiskAgent(),
+    "remedy": RemediationAgent(),
+    "trouble": TroubleshootAgent(),
+    "scan": scan_agent  
 }
 
 mcp = MCP(agents)
@@ -46,10 +52,15 @@ def netbot_chat():
     payload = {
         "context": context,
         "prompt": prompt,
-        "pdf": pdf_path
+        "pdf": pdf_path,
+        "job_id": SCAN_JOBS.get(session)
     }
 
     reply, model = mcp.route(mode, payload)
+    # Save scan job id if present
+    if "Job ID:" in reply:
+        job_id = reply.split("Job ID:")[-1].strip()
+        SCAN_JOBS[session] = job_id
 
 # Force clean string output
     if isinstance(reply, (list, tuple)):

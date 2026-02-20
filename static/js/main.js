@@ -7,7 +7,7 @@ const progressBar = document.getElementById('progressBar');
 const resultsContainer = document.getElementById('resultsContainer');
 const deviceCount = document.getElementById('deviceCount');
 const lastUpdated = document.getElementById('lastUpdated');
-
+const NETBOT_SESSION = "netbot_" + Math.random().toString(36).slice(2);
 // Quick stats elements (may not exist yet; we check before updating)
 const statDevices = document.getElementById('statDevices');
 const statVulns = document.getElementById('statVulns');
@@ -157,7 +157,7 @@ async function sendToNetBot(msg) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      session: "user_" + Date.now(),
+      session: NETBOT_SESSION,
       message: msg,
       pdf_path: netbotPdfPath
     })
@@ -318,13 +318,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function addMsg(text, cls) {
 
-    const div = document.createElement("div");
-    div.className = cls;
-    div.innerText = text;
+  const div = document.createElement("div");
+  div.className = cls;
 
-    netMsg.appendChild(div);
-    netMsg.scrollTop = netMsg.scrollHeight;
+  let i = 0;
+
+  function type() {
+    if (i < text.length) {
+      div.innerText += text.charAt(i++);
+      setTimeout(type, 8);
+    }
   }
+
+  netMsg.appendChild(div);
+  type();
+
+  netMsg.scrollTop = netMsg.scrollHeight;
+}
 
   async function sendNetBot() {
 
@@ -360,6 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const up = await upload.json();
 
       netbotPdfPath = up.path;
+      addMsg("📄 Uploaded: " + file.name, "netbot-user");
       netFile.value = "";
     }
 

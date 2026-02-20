@@ -1,43 +1,82 @@
-class RemediationAgent:
+import threading
+import time
 
-    def recommend(self, report_text):
+# Import your existing scanner logic
+from scanner import scan_network
 
-        return f"""
-Vulnerability Remediation Plan
 
-HIGH PRIORITY (Fix First):
-- Open remote access ports (SSH/RDP/FTP)
-- Outdated critical services
-- Unpatched OS vulnerabilities
-- Weak authentication
+class ScanAgent:
 
-MEDIUM PRIORITY:
-- Minor service misconfigurations
-- Legacy protocols (SMBv1, TLS 1.0)
-- Unused open ports
+    def __init__(self):
+        self.jobs = {}   # job_id -> status
 
-LOW PRIORITY (Can Monitor):
-- Informational findings
-- Low-risk banners
-- Local-only services
 
-Recommended Actions:
+    def start_scan(self, target):
 
-1. Patch Systems Immediately
-   - Run OS and software updates
+        job_id = str(int(time.time() * 1000))
 
-2. Close Unused Ports
-   - Use firewall rules
+        self.jobs[job_id] = {
+            "status": "running",
+            "progress": 0,
+            "result": [],
+            "cancel": False
+        }
 
-3. Harden Authentication
-   - Strong passwords + MFA
+        t = threading.Thread(
+            target=self._run_scan,
+            args=(job_id, target),
+            daemon=True
+        )
 
-4. Enable Monitoring
-   - IDS / logs
+        t.start()
 
-5. Backup Before Changes
-   - Prevent downtime
+        return {
+            "job_id": job_id,
+            "message": "Scan started"
+        }
 
-Report Context:
-{report_text[:1200]}
-"""
+
+    def _run_scan(self, job_id, target):
+
+        try:
+
+            for percent, data in scan_network(target):
+
+                # Cancel check
+                if self.jobs[job_id]["cancel"]:
+                    self.jobs[job_id]["status"] = "cancelled"
+                    return
+
+                self.jobs[job_id]["progress"] = percent
+                self.jobs[job_id]["result"].append(data)
+
+            self.jobs[job_id]["status"] = "completed"
+
+        except Exception as e:
+
+            self.jobs[job_id]["status"] = "failed"
+            self.jobs[job_id]["error"] = str(e)
+
+
+    def cancel_scan(self, job_id):
+
+        if job_id in self.jobs:
+            self.jobs[job_id]["cancel"] = True
+            return {"status": "cancelled"}
+
+        return {"error": "Invalid job id"}
+
+
+    def get_status(self, job_id):
+
+        job = self.jobs.get(job_id)
+
+        if not job:
+            return {"error": "Job not found"}
+
+        return {
+            "job_id": job_id,
+            "status": job["status"],
+            "progress": job["progress"],
+            "result": job["result"]
+        }

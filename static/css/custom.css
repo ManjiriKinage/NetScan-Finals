@@ -56,16 +56,28 @@ pre { white-space: pre-wrap; word-wrap: break-word; }
   font-size:13px;
 }
 
+.netbot-user,
+.netbot-bot {
+  max-width: 80%;
+  padding: 8px 12px;
+  margin: 6px;
+  border-radius: 12px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
 .netbot-user {
-  text-align:right;
-  margin:5px;
-  color:#22c55e;
+  align-self: flex-end;
+  background: #064e3b;
+  color: #22c55e;
+  text-align: right;
 }
 
 .netbot-bot {
-  text-align:left;
-  margin:5px;
-  color:#38bdf8;
+  align-self: flex-start;
+  background: #020617;
+  color: #38bdf8;
+  border: 1px solid #0f172a;
 }
 
 #netbot-input {
