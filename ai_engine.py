@@ -1,34 +1,101 @@
-# ai_engine.py
+from ai_hash import make_scan_hash
+from ai_cache_supabase import get_cached_summary, save_summary
 
+import openai
 import google.generativeai as genai
 import os
 
-genai.configure(api_key=os.getenv("GEMINI_KEY"))
 
-model = genai.GenerativeModel("gemini-pro")
+OPENAI_KEY = os.getenv("OPENAI_KEY")
+GEMINI_KEY = os.getenv("GEMINI_KEY")
+
+
+openai.api_key = OPENAI_KEY
+genai.configure(api_key=GEMINI_KEY)
+
+
+def call_openai(prompt):
+
+    resp = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.3
+    )
+
+    return resp.choices[0].message.content
+
+
+def call_gemini(prompt):
+
+    model = genai.GenerativeModel("gemini-2.5-flash")
+
+    res = model.generate_content(prompt)
+
+    return res.text
 
 
 def summarize_report(report):
 
-    if not os.getenv("GEMINI_KEY"):
-        return "AI summary unavailable (API key not configured)"
+    # Create fingerprint
+    scan_hash = make_scan_hash(report)
 
+    # Check cache
+    cached = get_cached_summary(scan_hash)
+
+    if cached:
+        print("[AI] Cache hit")
+        return cached["summary"]
+
+    prompt = build_prompt(report)
+
+    # Try OpenAI first
     try:
-        prompt = f"""
-You are a cybersecurity expert.
 
-Analyze this scan report:
+        print("[AI] Using OpenAI")
+
+        summary = call_openai(prompt)
+
+        save_summary(scan_hash, summary, "openai")
+
+        return summary
+
+    except Exception as e:
+
+        print("[AI] OpenAI failed:", e)
+
+
+    # Fallback to Gemini
+    try:
+
+        print("[AI] Using Gemini")
+
+        summary = call_gemini(prompt)
+
+        save_summary(scan_hash, summary, "gemini")
+
+        return summary
+
+    except Exception as e:
+
+        print("[AI] Gemini failed:", e)
+
+        return "AI summary unavailable due to API limits."
+
+
+def build_prompt(report):
+
+    return f"""
+You are a cybersecurity analyst.
+
+Analyze this scan:
+
 {report}
 
 Give:
-1. Overall risk
-2. Top 3 threats
-3. Fix priority
+1. Risk overview
+2. Top threats
+3. Priority fixes
 4. Business impact
+
+Short and professional.
 """
-
-        resp = model.generate_content(prompt)
-        return resp.text
-
-    except Exception as e:
-        return f"AI summary failed: {str(e)}"

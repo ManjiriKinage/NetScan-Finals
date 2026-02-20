@@ -5,12 +5,12 @@ import threading
 import time
 from flask import Flask, render_template, request, jsonify, send_from_directory, current_app
 from report_generator import generate_pdf
-from scanner import scan_network  # updated scanner that supports progress_callback
+from scanner import scan_network
+from dotenv import load_dotenv
+load_dotenv()  # updated scanner that supports progress_callback
 from ai_engine import summarize_report
 from emailer import send_report
 
-from dotenv import load_dotenv
-load_dotenv()
 from supabase import create_client
 from flask import session, redirect, url_for
 
@@ -84,10 +84,17 @@ def run_scan_job(job_id, subnet,role):
                 except Exception as e:
                     jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
-            # THREAD FIX: url_for mat use karo, direct path banao
-            filename = os.path.basename(pdf_path)
-            pdf_url = f"/outputs/{filename}"
-            jobs[job_id]['pdf'] = pdf_url
+            # Generate PDF only if something exists
+            if report and len(report) > 0:
+
+                pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
+
+                filename = os.path.basename(pdf_path)
+
+                jobs[job_id]["pdf"] = f"/outputs/{filename}"
+
+            else:
+                jobs[job_id]["pdf"] = None
             # Calculate overall risk
             critical = sum(1 for d in report if d.get("risk") == "Critical")
 
