@@ -15,6 +15,7 @@ const statReports = document.getElementById('statReports');
 
 let pollInterval = null;
 let currentJob = null;
+let isScanning = false;
 
 function appendLog(text) {
   const time = new Date().toLocaleTimeString();
@@ -39,46 +40,115 @@ function renderResults(results) {
     const el = document.createElement('div');
     // use border-black to match your theme
     el.className = 'p-3 bg-slate-900/30 rounded border border-black';
-    el.innerHTML = `<div class="flex items-center justify-between"><div class="font-medium text-slate-100">${dev.host}</div></div>
-                    <div class="mt-2">${vulnHtml}</div>`;
+    el.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div class="font-medium text-slate-100">${dev.host}</div>
+        <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white">
+          ${dev.risk || "Info"}
+        </span>
+      </div>
+      <div class="mt-2">${vulnHtml}</div>
+    `;
     resultsContainer.appendChild(el);
   });
 }
 
 async function startScan() {
+
+  // If already scanning → Cancel
+  if (isScanning && currentJob) {
+    cancelScan();
+    return;
+  }
+
   const subnet = document.getElementById('subnet').value.trim();
+
   if (!subnet) {
     appendLog('Please provide subnet');
     return;
   }
+
   appendLog(`Starting scan for ${subnet}...`);
-  scanBtn.disabled = true;
+
+  isScanning = true;
+  scanBtn.innerHTML = "Cancel Scan";
+  scanBtn.classList.remove("from-rose-500","via-orange-400","to-amber-300");
+  scanBtn.classList.add("bg-rose-600");
+
+  // Status → Scanning
+  const mail = document.getElementById("mailStatus");
+  if (mail) {
+    mail.textContent = "Scanning...";
+    mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-amber-500 text-black";
+  }
 
   try {
+
     const res = await fetch('/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ subnet })
     });
 
-    if (!res.ok) {
-      const j = await res.json();
-      appendLog('Server error starting job: ' + (j.error || 'unknown'));
-      scanBtn.disabled = false;
-      return;
-    }
-
     const data = await res.json();
+
     currentJob = data.job_id;
+
     appendLog('Job started: ' + currentJob);
 
     pollInterval = setInterval(() => pollStatus(currentJob), 1000);
+
   } catch (e) {
-    appendLog('Start request failed: ' + e);
-    scanBtn.disabled = false;
+
+    appendLog('Start failed: ' + e);
+    resetUI();
   }
 }
 
+async function cancelScan() {
+
+  if (!currentJob) return;
+
+  appendLog("Cancelling scan...");
+
+  try {
+
+    await fetch(`/cancel/${currentJob}`, {
+      method: "POST"
+    });
+
+    appendLog("Scan cancelled. Partial report generated.");
+
+  } catch (e) {
+    appendLog("Cancel failed: " + e);
+  }
+
+  resetUI();
+}
+
+function resetUI() {
+
+  if (pollInterval) clearInterval(pollInterval);
+
+  isScanning = false;
+  currentJob = null;
+
+  // Reset button
+  scanBtn.innerHTML = "Start Scan";
+  scanBtn.classList.remove("bg-rose-600");
+  scanBtn.classList.add("from-rose-500","via-orange-400","to-amber-300");
+
+  // Status → Idle
+  const mail = document.getElementById("mailStatus");
+
+  if (mail) {
+    mail.textContent = "Idle";
+    mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-slate-500 text-white";
+  }
+
+  // Reset progress
+  if (progressBar) progressBar.style.width = "0%";
+}
 async function pollStatus(jobId) {
   try {
     const res = await fetch(`/status/${jobId}`);
@@ -99,19 +169,63 @@ async function pollStatus(jobId) {
     const p = data.progress || 0;
     if (progressBar) progressBar.style.width = `${p}%`;
 
+    
     // update results
     renderResults(data.results || []);
+    // AI Summary
+    const aiBox = document.getElementById("aiSummary");
+    if (aiBox && data.ai_summary) {
+      aiBox.textContent = data.ai_summary;
+    }
 
     // --- QUICK STATS UPDATE (safe checks) ---
     const results = data.results || [];
     const devices = results.length;
     let vulnCount = 0;
-    results.forEach(dev => { vulnCount += (dev.vulnerabilities || []).length; });
+    let critical = 0, high = 0, medium = 0, low = 0;
+
+    results.forEach(dev => {
+      vulnCount += (dev.vulnerabilities || []).length;
+
+      switch (dev.risk) {
+        case "Critical": critical++; break;
+        case "High": high++; break;
+        case "Medium": medium++; break;
+        default: low++;
+      }
+    });
+
+    const riskBox = document.getElementById("riskBox");
+
+    if (riskBox) {
+      riskBox.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          <div class="text-rose-400 font-semibold">Critical: ${critical}</div>
+          <div class="text-orange-400 font-semibold">High: ${high}</div>
+          <div class="text-amber-300 font-semibold">Medium: ${medium}</div>
+          <div class="text-slate-400 font-semibold">Low: ${low}</div>
+        </div>
+      `;
+    }
 
     if (statDevices) statDevices.textContent = devices;
     if (statVulns) statVulns.textContent = vulnCount;
     if (statReports) statReports.textContent = data.pdf ? '1' : '0';
+    // Email status badge
+    const mail = document.getElementById("mailStatus");
 
+    if (mail && data.logs) {
+
+      if (data.logs.some(l => l.includes("Report emailed successfully"))) {
+        mail.textContent = "Email Sent";
+        mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+      }
+
+      if (data.logs.some(l => l.includes("Email failed"))) {
+        mail.textContent = "Email Failed";
+        mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-rose-500 text-white";
+      }
+    }
     // pdf link
     if (data.pdf) {
   pdfLink.innerHTML = `
@@ -130,12 +244,13 @@ async function pollStatus(jobId) {
 }
 
 
-    if (data.status === 'done' || data.status === 'error') {
-      appendLog('Job finished with status: ' + data.status + (data.error ? (' - ' + data.error) : ''));
-      clearInterval(pollInterval);
-      scanBtn.disabled = false;
-      currentJob = null;
-    }
+  if (data.status === 'done' || data.status === 'error' || data.status === 'cancelled') {
+
+  appendLog('Job finished: ' + data.status);
+
+  resetUI();
+
+} 
   } catch (e) {
     appendLog('Status poll failed: ' + e);
     clearInterval(pollInterval);

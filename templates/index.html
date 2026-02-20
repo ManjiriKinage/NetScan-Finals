@@ -28,7 +28,7 @@
       </div>
 
       <div class="flex items-center gap-4">
-        <div class="text-sm text-slate-300">Status: <span class="ml-2 inline-block px-2 py-0.5 rounded bg-amber-400 text-slate-900 font-medium">Ready</span></div>
+        <div class="text-sm text-slate-300">Status: <span id="mailStatus" class="ml-2 inline-block px-2 py-0.5 rounded bg-slate-500 text-white"> Idle</span></div>
         <button id="settingsBtn" class="flex items-center gap-2 bg-slate-800/60 hover:bg-slate-800/40 px-3 py-2 rounded-md text-sm border border-slate-700">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-200" viewBox="0 0 20 20" fill="currentColor">
             <path d="M11.3 1.046a1 1 0 00-2.6 0l-.2.87A6.99 6.99 0 006.1 3.3l-.87-.2a1 1 0 00-1.09.62L2.3 6.29a1 1 0 00.22 1.05l.59.59a6.99 6.99 0 000 2.64l-.59.59a1 1 0 00-.22 1.05l1.04 1.77a1 1 0 001.09.62l.87-.2c.64.43 1.35.77 2.1 1.01l.2.87a1 1 0 001.3.77L10 17.9a1 1 0 00.82-.58l.2-.87c.74-.24 1.44-.58 2.09-1.01l.87.2a1 1 0 001.09-.62l1.04-1.77a1 1 0 00-.22-1.05l-.59-.59a6.99 6.99 0 000-2.64l.59-.59a1 1 0 00.22-1.05L16.1 3.7a1 1 0 00-1.09-.62l-.87.2c-.64-.43-1.35-.77-2.09-1.01l-.2-.87z" />
@@ -57,9 +57,7 @@
               Start Scan
             </button>
 
-            <button id="cancelBtn" class="px-3 py-2 rounded-md bg-slate-700 border border-slate-600 text-slate-200 text-sm hover:bg-slate-700/80">
-              Cancel
-            </button>
+            
           </div>
 
           <div class="mt-4 text-xs text-slate-400">
@@ -83,7 +81,12 @@
               <div class="text-xs text-slate-400">Reports</div>
               <div id="statReports" class="text-lg font-bold text-green-300">0</div>
             </div>
+            
           </div>
+          <div id="riskBox"
+          class="mt-4 bg-slate-900/60 border border-slate-600 rounded-xl p-5 text-sm space-y-2 w-full">
+          Risk distribution loading…
+        </div>
         </div>
 
         <!-- Small legend -->
@@ -136,6 +139,11 @@
             <div class="text-sm text-slate-400 italic">No results yet — start a scan to see devices here.</div>
           </div>
         </div>
+
+        <div id="aiSummary"
+          class="p-3 mt-4 bg-slate-800 rounded border border-black text-slate-200 text-sm">
+        AI summary will appear here...
+      </div>
       </div>
 
     </div>

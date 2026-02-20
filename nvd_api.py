@@ -1,6 +1,8 @@
 import requests
+import os
 
-API_KEY = "d28d1ffe-ebf0-4523-b3a0-9b7969c6d719"
+API_KEY = os.getenv("NVD_API_KEY")
+
 
 def fetch_cve(service, version):
     url = "https://services.nvd.nist.gov/rest/json/cves/2.0"

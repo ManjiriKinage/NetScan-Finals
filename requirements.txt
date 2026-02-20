@@ -4,3 +4,4 @@ fpdf2
 tqdm
 python-dotenv
 requests
+google-generativeai

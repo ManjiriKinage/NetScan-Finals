@@ -6,6 +6,8 @@ import time
 from flask import Flask, render_template, request, jsonify, send_from_directory, current_app
 from report_generator import generate_pdf
 from scanner import scan_network  # updated scanner that supports progress_callback
+from ai_engine import summarize_report
+from emailer import send_report
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -35,9 +37,31 @@ def run_scan_job(job_id, subnet):
                     job['results'].append(payload)
 
             # run scanner (this will call progress_callback)
-            report = scan_network(subnet, progress_callback=progress_callback)
+            report = []
+
+            for item in scan_network(subnet, progress_callback=progress_callback):
+
+                # Check cancel flag
+                if jobs[job_id].get("cancel"):
+                    jobs[job_id]["logs"].append("Scan cancelled by user.")
+                    break
+
+                report.append(item)
+            # Generate AI summary
+            ai_summary = summarize_report(report)
+            jobs[job_id]["ai_summary"] = ai_summary
             # generate pdf
             pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
+            sender = os.getenv("MAIL_USER")
+            password = os.getenv("MAIL_PASS")
+            receiver = os.getenv("MAIL_TO")
+
+            if sender and password and receiver:
+                try:
+                    send_report(sender, password, receiver, pdf_path)
+                    jobs[job_id]['logs'].append("Report emailed successfully.")
+                except Exception as e:
+                    jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
             # THREAD FIX: url_for mat use karo, direct path banao
             filename = os.path.basename(pdf_path)
@@ -77,7 +101,8 @@ def start_scan():
         'results': [],
         'pdf': None,
         'error': None,
-        'started_at': time.time()
+        'started_at': time.time(),
+        "cancel": False
     }
 
     # start background thread
@@ -98,12 +123,34 @@ def job_status(job_id):
         'results': job['results'],
         'pdf': job['pdf'],
         'summary': job.get('summary'),
+        'ai_summary': job.get('ai_summary'),
         'error': job['error']
     })
+
+@app.route("/cancel/<job_id>", methods=["POST"])
+def cancel_job(job_id):
+
+    job = jobs.get(job_id)
+
+    if not job:
+        return jsonify({"error": "not found"}), 404
+
+    job["cancel"] = True
+    job["status"] = "cancelled"
+
+    return jsonify({"status": "cancelled"})
 
 @app.route("/outputs/<path:filename>")
 def download_report(filename):
     return send_from_directory(OUTPUT_DIR, filename, as_attachment=True)
 
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "ok",
+        "ai": bool(os.getenv("GEMINI_KEY")),
+        "email": bool(os.getenv("MAIL_USER")),
+        "nvd": bool(os.getenv("NVD_API_KEY"))
+    })  
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
