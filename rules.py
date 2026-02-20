@@ -11,7 +11,13 @@ OUTDATED_SOFTWARE = {
     "openssh": 8.0,
     "nginx": 1.20,
 }
-
+FIX_RECOMMENDATIONS = {
+    21: "Disable FTP and use SFTP/SSH",
+    23: "Disable Telnet and use SSH",
+    80: "Enable HTTPS with TLS",
+    3389: "Restrict RDP using firewall/VPN",
+    5900: "Restrict VNC to private network"
+}
 def check_version(service, version):
     service = (service or "").lower()
     if service in OUTDATED_SOFTWARE:

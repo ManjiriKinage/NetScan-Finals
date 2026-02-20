@@ -4,6 +4,8 @@ import ipaddress
 import shutil
 import time
 from rules import WEAK_PORTS, check_version
+from nvd_api import fetch_cve
+from rules import FIX_RECOMMENDATIONS
 
 def ensure_nmap_available():
     return bool(shutil.which("nmap") or shutil.which("nmap.exe"))
@@ -19,6 +21,7 @@ def build_ip_list(subnet):
             prefix = ".".join(parts[:3]) + "."
             return [f"{prefix}{i}" for i in range(1, 255)]
         return [base]
+
 
 def scan_network(subnet, progress_callback=None):
     """
@@ -58,7 +61,12 @@ def scan_network(subnet, progress_callback=None):
                 progress_callback('progress', (scanned * 100) // total)
             continue
 
-        device = {"host": ip, "vulnerabilities": []}
+        device = {
+            "host": ip,
+            "services": [],
+            "vulnerabilities": [],
+            "severity_score": 0
+        }
 
         try:
             for proto in scanner[ip].all_protocols():
@@ -67,8 +75,29 @@ def scan_network(subnet, progress_callback=None):
                     product = svc.get("product", "") or ""
                     version = svc.get("version", "") or ""
 
+                    device["services"].append({
+                        "port": port,
+                        "service": product,
+                        "version": version
+                    })
+
+                    # Fetch CVEs from NVD
+                    if product and version:
+                        cves = fetch_cve(product, version)
+
+                        for c in cves:
+                            msg = f"{c['cve_id']} (CVSS {c['score']}) - {c['description'][:80]}"
+
+                            device["vulnerabilities"].append(msg)
+
+                            if c["score"]:
+                                device["severity_score"] += float(c["score"])
                     if port in WEAK_PORTS:
-                        device["vulnerabilities"].append(f"Port {port} open -> {WEAK_PORTS[port]}")
+                        fix = FIX_RECOMMENDATIONS.get(port, "Restrict access")
+
+                        device["vulnerabilities"].append(
+                            f"Port {port} open -> {WEAK_PORTS[port]} | Fix: {fix}"
+                        )
 
                     outdated = check_version(product, version)
                     if outdated:
@@ -76,6 +105,18 @@ def scan_network(subnet, progress_callback=None):
         except Exception as e:
             if progress_callback:
                 progress_callback('log', f"Warning parsing {ip}: {e}")
+
+        # Assign risk level
+        score = device["severity_score"]
+
+        if score >= 9:
+            device["risk"] = "Critical"
+        elif score >= 7:
+            device["risk"] = "High"
+        elif score >= 4:
+            device["risk"] = "Medium"
+        else:
+            device["risk"] = "Low"
 
         results.append(device)
         if progress_callback:

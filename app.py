@@ -43,6 +43,14 @@ def run_scan_job(job_id, subnet):
             filename = os.path.basename(pdf_path)
             pdf_url = f"/outputs/{filename}"
             jobs[job_id]['pdf'] = pdf_url
+            # Calculate overall risk
+            critical = sum(1 for d in report if d.get("risk") == "Critical")
+
+            jobs[job_id]['summary'] = {
+                "critical_devices": critical,
+                "total_devices": len(report)
+            }
+
             jobs[job_id]['results'] = report
             jobs[job_id]['progress'] = 100
             jobs[job_id]['status'] = 'done'
@@ -89,6 +97,7 @@ def job_status(job_id):
         'logs': job['logs'],
         'results': job['results'],
         'pdf': job['pdf'],
+        'summary': job.get('summary'),
         'error': job['error']
     })
 

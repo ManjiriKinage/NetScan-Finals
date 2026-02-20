@@ -33,7 +33,27 @@ def generate_pdf(report, output_dir="outputs"):
 
     for device in report:
         pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, txt=_sanitize(f"Device: {device['host']}"), ln=True)
+        pdf.cell(
+            0, 8,
+            txt=_sanitize(
+                f"Device: {device['host']} | Risk: {device.get('risk','N/A')}"
+            ),
+            ln=True
+        )
+
+        # Services
+        services = device.get("services", [])
+
+        if services:
+            pdf.cell(0, 7, txt=_sanitize("Running Services:"), ln=True)
+            for s in services:
+                pdf.cell(
+                    0, 7,
+                    txt=_sanitize(
+                        f"  - {s['service']} {s['version']} (Port {s['port']})"
+                    ),
+                    ln=True
+                )
         pdf.set_font("Arial", size=11)
         if not device["vulnerabilities"]:
             pdf.cell(0, 7, txt=_sanitize("- No major vulnerabilities found"), ln=True)
