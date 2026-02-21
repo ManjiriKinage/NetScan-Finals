@@ -52,29 +52,50 @@
     </div>
   </div>
 
-  <!-- RIGHT SIDE – MOVING TEXT -->
-  <div class="w-1/2 flex items-center justify-center bg-slate-800 relative overflow-hidden">
-
-    <!-- Moving keywords -->
-    <div class="absolute inset-0 opacity-20">
-      <div class="animate-marquee whitespace-nowrap text-3xl font-semibold text-sky-400">
-        Real-Time Network Monitoring • CVE Intelligence • 
-        Threat Detection • Vulnerability Scanning • 
-        AI Risk Summary • Startup Security • 
-        Automated Reports • 
+  <!-- RIGHT SIDE – FEATURES -->
+  <div class="w-1/2 flex items-center justify-center relative overflow-hidden">
+    
+    <div class="absolute inset-0 opacity-30">
+      <div class="animate-marquee whitespace-nowrap text-lg font-semibold text-purple-400">
+        Real-Time Monitoring • CVE Intelligence • Threat Detection • Vulnerability Scanning • AI Risk Analysis • Automated Reports • 
       </div>
     </div>
 
-    <!-- Static center content -->
     <div class="relative z-10 text-center px-12">
-      <h1 class="text-4xl font-bold mb-6">
+      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-sky-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
         Secure Your Network
       </h1>
-      <p class="text-slate-300 text-lg leading-relaxed">
-        NetScan helps startups detect vulnerabilities,
-        prioritize risks, and secure infrastructure
-        with intelligent scanning.
+      
+      <p class="text-slate-300 text-lg leading-relaxed mb-12">
+        NetScan helps startups detect vulnerabilities, prioritize risks, and secure infrastructure with intelligent scanning.
       </p>
+
+      <!-- Features Grid -->
+      <div class="grid grid-cols-2 gap-6 mt-12">
+        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
+          <i class="fas fa-network-wired text-3xl text-sky-400 mb-3"></i>
+          <h3 class="font-semibold text-sky-300 mb-2">Real-Time Scanning</h3>
+          <p class="text-slate-400 text-sm">Instant vulnerability detection</p>
+        </div>
+
+        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
+          <i class="fas fa-brain text-3xl text-purple-400 mb-3"></i>
+          <h3 class="font-semibold text-purple-300 mb-2">AI-Powered</h3>
+          <p class="text-slate-400 text-sm">Smart threat prioritization</p>
+        </div>
+
+        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
+          <i class="fas fa-bolt text-3xl text-pink-400 mb-3"></i>
+          <h3 class="font-semibold text-pink-300 mb-2">Lightning Fast</h3>
+          <p class="text-slate-400 text-sm">Rapid analysis and reports</p>
+        </div>
+
+        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
+          <i class="fas fa-lock-open text-3xl text-orange-400 mb-3"></i>
+          <h3 class="font-semibold text-orange-300 mb-2">Security First</h3>
+          <p class="text-slate-400 text-sm">Enterprise-grade protection</p>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -103,9 +124,28 @@ async function login(){
   0% { transform: translateX(0%); }
   100% { transform: translateX(-50%); }
 }
+
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+}
+
 .animate-marquee {
   display: inline-block;
-  animation: marquee 15s linear infinite;
+  animation: marquee 25s linear infinite;
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 </style>
 
