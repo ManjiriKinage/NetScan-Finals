@@ -4,10 +4,12 @@ import uuid
 import threading
 import time
 from flask import Flask, render_template, request, jsonify, send_from_directory, current_app
+from dotenv import load_dotenv
+load_dotenv() 
+from netbot.server import netbot_bp
 from report_generator import generate_pdf
 from scanner import scan_network
-from dotenv import load_dotenv
-load_dotenv()  # updated scanner that supports progress_callback
+ # updated scanner that supports progress_callback
 from ai_engine import summarize_report
 from emailer import send_report
 
@@ -19,6 +21,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.register_blueprint(netbot_bp)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret")
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
@@ -63,7 +66,6 @@ def run_scan_job(job_id, subnet,role):
             ai_summary = summarize_report(report)
             jobs[job_id]["ai_summary"] = ai_summary
             # generate pdf
-            pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
             
             if role == "admin":
                 sender = os.getenv("MAIL_USER")
@@ -77,12 +79,6 @@ def run_scan_job(job_id, subnet,role):
                     except Exception as e:
                         jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
-            if sender and password and receiver:
-                try:
-                    send_report(sender, password, receiver, pdf_path)
-                    jobs[job_id]['logs'].append("Report emailed successfully.")
-                except Exception as e:
-                    jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
 
             # Generate PDF only if something exists
             if report and len(report) > 0:
@@ -263,5 +259,30 @@ def guest_mode():
 def logout():
     session.clear()
     return redirect("/")
+
+UPLOAD_DIR = os.path.join(app.root_path, "outputs")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@app.route("/netbot/upload", methods=["POST"])
+def upload_netbot_pdf():
+
+    if "file" not in request.files:
+        return {"error": "No file"}, 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return {"error": "Empty file"}, 400
+
+    filename = file.filename.replace(" ", "_")
+
+    save_path = os.path.join(UPLOAD_DIR, filename)
+
+    file.save(save_path)
+
+    return {
+        "path": f"/outputs/{filename}"
+    }
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
