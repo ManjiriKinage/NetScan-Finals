@@ -34,20 +34,30 @@ class MCP:
         # START SCAN
         if intent == "scan_start":
             target = payload.get("prompt")
-            result = self.agents["scan"].start_scan(target)
-            return f"Scan started. Job ID: {result['job_id']}", "scan"
+            cookies = payload.get("cookies")
+            result = self.agents["scan"].start_scan(target, cookies=cookies)
+            if "error" in result:
+                return f"⚠️ Could not start scan: {result['error']}", "scan"
+            subnet = result.get("subnet", "unknown")
+            return f"✅ Scan started for **{subnet}**! Job ID: {result['job_id']}\n\nYou can see live progress in the main dashboard. Type 'scan status' to check progress here.", "scan"
 
         # STOP SCAN
         if intent == "scan_stop":
             job = payload.get("job_id")
-            result = self.agents["scan"].cancel_scan(job)
-            return "Scan cancelled.", "scan"
+            cookies = payload.get("cookies")
+            result = self.agents["scan"].cancel_scan(job, cookies=cookies)
+            if "error" in result:
+                return f"⚠️ {result['error']}", "scan"
+            return "🛑 Scan cancelled.", "scan"
 
         # SCAN STATUS
         if intent == "scan_status":
             job = payload.get("job_id")
-            status = self.agents["scan"].get_status(job)
-            return str(status), "scan"
+            cookies = payload.get("cookies")
+            status = self.agents["scan"].get_status(job, cookies=cookies)
+            if "error" in status:
+                return f"⚠️ {status['error']}", "scan"
+            return f"📊 Scan Status: **{status['status']}** | Progress: {status['progress']}% | Devices Found: {status['devices_found']}", "scan"
 
         # Normal chat
         if intent == "chat":

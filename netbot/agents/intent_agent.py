@@ -4,8 +4,21 @@ class IntentAgent:
 
         t = text.lower()
 
+        # Stop scan (check before start)
+        if "stop scan" in t or "cancel scan" in t:
+            return "scan_stop"
+
+        # Status
+        if "scan status" in t or "progress" in t:
+            return "scan_status"
+
+        # Start scan — matches "start scan", "scan 192.168.x.x", etc.
+        if "scan" in t and ("start" in t or "/" in t or "." in t):
+            return "scan_start"
+
+        # Generic "scan" keyword also triggers a scan start
         if "scan" in t:
-            return "scan"
+            return "scan_start"
 
         if "pdf" in t or "report" in t:
             return "pdf"
@@ -19,16 +32,5 @@ class IntentAgent:
             return "remedy"
         if "still" in t or "not fixed" in t or "issue" in t or "problem" in t or "troubleshoot" in t:
             return "trouble"
-        # Start scan
-        if "scan" in t and ("start" in t or "/" in t or "." in t):
-            return "scan_start"
-
-        # Stop scan
-        if "stop scan" in t or "cancel scan" in t:
-            return "scan_stop"
-
-        # Status
-        if "scan status" in t or "progress" in t:
-            return "scan_status"
 
         return "chat"
