@@ -21,7 +21,7 @@ def send_report(sender, password, receiver, file_path):
             )
             msg.attach(attach)
 
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
         server.login(sender, password)
         server.send_message(msg)
         server.quit()

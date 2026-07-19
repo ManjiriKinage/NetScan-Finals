@@ -15,8 +15,8 @@ genai.configure(api_key=GEMINI_KEY)
 
 
 def call_openai(prompt):
-
-    resp = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=OPENAI_KEY)
+    resp = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role":"user","content":prompt}],
         temperature=0.3

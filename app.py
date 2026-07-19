@@ -65,9 +65,16 @@ def run_scan_job(job_id, subnet,role):
             # Generate AI summary
             ai_summary = summarize_report(report)
             jobs[job_id]["ai_summary"] = ai_summary
-            # generate pdf
-            
-            if role == "admin":
+            # Generate PDF only if something exists
+            pdf_path = None
+            if report and len(report) > 0:
+                pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
+                filename = os.path.basename(pdf_path)
+                jobs[job_id]["pdf"] = f"/outputs/{filename}"
+            else:
+                jobs[job_id]["pdf"] = None
+                
+            if role == "admin" and pdf_path:
                 sender = os.getenv("MAIL_USER")
                 password = os.getenv("MAIL_PASS")
                 receiver = os.getenv("MAIL_TO")
@@ -78,19 +85,6 @@ def run_scan_job(job_id, subnet,role):
                         jobs[job_id]['logs'].append("Report emailed successfully.")
                     except Exception as e:
                         jobs[job_id]['logs'].append(f"Email failed: {str(e)}")
-
-
-            # Generate PDF only if something exists
-            if report and len(report) > 0:
-
-                pdf_path = generate_pdf(report, output_dir=OUTPUT_DIR)
-
-                filename = os.path.basename(pdf_path)
-
-                jobs[job_id]["pdf"] = f"/outputs/{filename}"
-
-            else:
-                jobs[job_id]["pdf"] = None
             # Calculate overall risk
             critical = sum(1 for d in report if d.get("risk") == "Critical")
 
@@ -114,8 +108,8 @@ def run_scan_job(job_id, subnet,role):
 def start_scan():
     role = session.get("role")
 
-    if not role:
-        return jsonify({"error": "Unauthorized"}), 401
+    if role != "admin":
+        return jsonify({"error": "Unauthorized. Only admins can start scans."}), 403
     data = request.get_json(silent=True) or {}
     subnet = data.get("subnet")
     if not subnet:
@@ -171,6 +165,10 @@ def cancel_job(job_id):
 
 @app.route("/outputs/<path:filename>")
 def download_report(filename):
+    if not session.get("role"):
+        return jsonify({"error": "Unauthorized"}), 401
+    from werkzeug.utils import secure_filename
+    filename = secure_filename(filename)
     return send_from_directory(OUTPUT_DIR, filename, as_attachment=True)
 
 @app.route("/health")
@@ -208,6 +206,12 @@ def is_strong_password(password):
 @app.route("/admin/register", methods=["POST"])
 def admin_register():
     data = request.get_json()
+    invite_code = data.get("invite_code")
+    expected_code = os.getenv("ADMIN_INVITE_CODE", "default_secret_code")
+    
+    if invite_code != expected_code:
+        return jsonify({"error": "Invalid invite code"}), 403
+        
     email = data.get("email")
     password = data.get("password")
     name = data.get("name")
@@ -275,7 +279,11 @@ def upload_netbot_pdf():
     if file.filename == "":
         return {"error": "Empty file"}, 400
 
-    filename = file.filename.replace(" ", "_")
+    from werkzeug.utils import secure_filename
+    filename = secure_filename(file.filename)
+    
+    if not filename.endswith('.pdf'):
+         return {"error": "Only PDF files are allowed"}, 400
 
     save_path = os.path.join(UPLOAD_DIR, filename)
 
