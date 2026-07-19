@@ -12,25 +12,28 @@ def make_hash(prompt, ctx):
     return hashlib.sha256(raw.encode()).hexdigest()
 
 def get_cache(h):
+    try:
+        r = db.table("netbot_ai_cache") \
+            .select("response") \
+            .eq("request_hash", h) \
+            .execute()
 
-    r = db.table("netbot_ai_cache") \
-        .select("response") \
-        .eq("request_hash", h) \
-        .execute()
-
-    if r.data:
-        return r.data[0]["response"]
-
+        if r.data:
+            return r.data[0]["response"]
+    except Exception as e:
+        print(f"[Cache] Failed to read cache: {e}")
     return None
 
 
 def save_cache(h, prompt, resp, model, tokens=0):
-
-    db.table("netbot_ai_cache").insert({
-        "request_hash": h,
-        "user_prompt": prompt,
-        "response": resp,
-        "model_used": model,
-        "token_used": tokens
-    }).execute()
+    try:
+        db.table("netbot_ai_cache").insert({
+            "request_hash": h,
+            "user_prompt": prompt,
+            "response": resp,
+            "model_used": model,
+            "token_used": tokens
+        }).execute()
+    except Exception as e:
+        print(f"[Cache] Failed to save cache: {e}")
 

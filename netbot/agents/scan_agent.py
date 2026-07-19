@@ -37,23 +37,23 @@ class ScanAgent:
 
 
     def _run_scan(self, job_id, target):
-
         try:
-
-            for percent, data in scan_network(target):
-
-                # Cancel check
+            def callback(event_type, payload):
                 if self.jobs[job_id]["cancel"]:
-                    self.jobs[job_id]["status"] = "cancelled"
                     return
+                if event_type == 'progress':
+                    self.jobs[job_id]["progress"] = payload
+                elif event_type == 'device':
+                    self.jobs[job_id]["result"].append(payload)
 
-                self.jobs[job_id]["progress"] = percent
-                self.jobs[job_id]["result"].append(data)
+            scan_network(target, progress_callback=callback)
 
-            self.jobs[job_id]["status"] = "completed"
+            if self.jobs[job_id]["cancel"]:
+                self.jobs[job_id]["status"] = "cancelled"
+            else:
+                self.jobs[job_id]["status"] = "completed"
 
         except Exception as e:
-
             self.jobs[job_id]["status"] = "failed"
             self.jobs[job_id]["error"] = str(e)
 
