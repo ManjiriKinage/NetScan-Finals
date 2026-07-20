@@ -19,9 +19,10 @@ def _sanitize(text: str) -> str:
     return s.encode("latin-1", "replace").decode("latin-1")
 
 def generate_pdf(report, output_dir="outputs"):
+    import uuid
     os.makedirs(output_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"vulnerability_report_{timestamp}.pdf"
+    filename = f"vulnerability_report_{timestamp}_{uuid.uuid4().hex[:8]}.pdf"
     path = os.path.join(output_dir, filename)
 
     pdf = FPDF()

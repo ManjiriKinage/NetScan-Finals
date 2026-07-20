@@ -14,13 +14,13 @@ def build_ip_list(subnet):
     try:
         net = ipaddress.ip_network(subnet, strict=False)
         return [str(ip) for ip in net.hosts()]
-    except Exception:
-        base = subnet.split("/")[0].strip()
-        parts = base.split(".")
-        if len(parts) == 4:
-            prefix = ".".join(parts[:3]) + "."
-            return [f"{prefix}{i}" for i in range(1, 255)]
-        return [base]
+    except ValueError:
+        try:
+             # Try parsing as a single IP
+             ip = ipaddress.ip_address(subnet)
+             return [str(ip)]
+        except ValueError:
+             raise ValueError(f"Invalid IP or subnet format: {subnet}")
 
 
 def scan_network(subnet, progress_callback=None):

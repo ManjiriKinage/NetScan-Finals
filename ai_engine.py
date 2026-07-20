@@ -2,7 +2,7 @@ from ai_hash import make_scan_hash
 from ai_cache_supabase import get_cached_summary, save_summary
 
 import openai
-import google.generativeai as genai
+from google import genai
 import os
 
 
@@ -11,12 +11,12 @@ GEMINI_KEY = os.getenv("GEMINI_KEY")
 
 
 openai.api_key = OPENAI_KEY
-genai.configure(api_key=GEMINI_KEY)
+genai_client = genai.Client(api_key=GEMINI_KEY)
 
 
 def call_openai(prompt):
-
-    resp = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=OPENAI_KEY)
+    resp = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role":"user","content":prompt}],
         temperature=0.3
@@ -27,9 +27,10 @@ def call_openai(prompt):
 
 def call_gemini(prompt):
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
-
-    res = model.generate_content(prompt)
+    res = genai_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
 
     return res.text
 

@@ -398,6 +398,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
     addMsg(data.reply, "netbot-bot");
 
+    // If the reply contains a Job ID, start polling in the main scan UI
+    if (data.reply && data.reply.includes("Job ID:")) {
+      const match = data.reply.match(/Job ID:\s*(\S+)/);
+      if (match) {
+        const jobId = match[1];
+        currentJob = jobId;
+        isScanning = true;
+
+        // Update scan button
+        scanBtn.innerHTML = "Cancel Scan";
+        scanBtn.classList.remove("from-rose-500","via-orange-400","to-amber-300");
+        scanBtn.classList.add("bg-rose-600");
+
+        // Update mail status
+        const mail = document.getElementById("mailStatus");
+        if (mail) {
+          mail.textContent = "Scanning...";
+          mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-amber-500 text-black";
+        }
+
+        appendLog("Scan started via NetBot. Job: " + jobId);
+
+        // Start polling
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => pollStatus(jobId), 1000);
+      }
+    }
+
+    // If the reply indicates scan was cancelled, reset the main UI
+    if (data.reply && (data.reply.includes("cancelled") || data.reply.includes("Scan cancelled"))) {
+      appendLog("Scan cancelled via NetBot.");
+      resetUI();
+    }
+
   } catch (err) {
 
     console.error(err);

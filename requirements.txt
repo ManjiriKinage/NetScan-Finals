@@ -6,3 +6,8 @@ python-dotenv
 requests
 google-generativeai
 supabasea
+google-genai
+openai
+supabase
+werkzeug
+pdfplumber

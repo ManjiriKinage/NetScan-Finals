@@ -1,10 +1,10 @@
 import os
 from openai import OpenAI
-import google.generativeai as genai
+from google import genai
 
 client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
 
-genai.configure(api_key=os.getenv("GEMINI_KEY"))
+genai_client = genai.Client(api_key=os.getenv("GEMINI_KEY"))
 
 
 class AIAgent:
@@ -36,10 +36,11 @@ class AIAgent:
         except Exception as e:
 
             # Gemini fallback
-            model = genai.GenerativeModel("gemini-2.5-flash")
-
             last_msg = ctx[-1]["content"]
 
-            r = model.generate_content(last_msg)
+            r = genai_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=last_msg
+            )
 
             return r.text.strip(), "gemini"

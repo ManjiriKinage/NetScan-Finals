@@ -53,7 +53,8 @@ def netbot_chat():
         "context": context,
         "prompt": prompt,
         "pdf": pdf_path,
-        "job_id": SCAN_JOBS.get(session)
+        "job_id": SCAN_JOBS.get(session),
+        "cookies": {k: v for k, v in request.cookies.items()}
     }
 
     reply, model = mcp.route(mode, payload)

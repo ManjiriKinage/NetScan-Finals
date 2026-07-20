@@ -13,7 +13,7 @@ def fetch_cve(service, version):
     }
 
     try:
-        r = requests.get(url, headers=headers, params=params)
+        r = requests.get(url, headers=headers, params=params, timeout=10)
         data = r.json()
         vulns = data.get("vulnerabilities", [])
         results = []
