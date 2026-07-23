@@ -4,12 +4,16 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>NetScan - Vulnerability Scanner</title>
+    <meta name="description" content="NetScan — Local network vulnerability scanner with AI-powered analysis, real-time scanning, and intelligent security recommendations." />
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for risk distribution doughnut (item 2.2) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <!-- marked.js for markdown rendering in NetBot chat (item 6.2) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
   </head>
 
-  <!-- CHANGE HERE: bg-slate-50 → bg-blue-50 -->
   <body class="bg-slate-700 min-h-screen text-slate-800 overflow-x-hidden">
 
     <div class="container mx-auto p-6">
@@ -20,8 +24,18 @@
     NetScan - Local Vulnerability Scanner
   </h1>
 
-  <!-- RIGHT SIDE: MODE + LOGOUT -->
+  <!-- RIGHT SIDE: MODE + THEME + LOGOUT -->
   <div class="flex items-center gap-4">
+
+    <!-- Theme Toggle (item 2.5) -->
+    <button id="themeToggle" class="p-2 rounded-lg bg-slate-600 hover:bg-slate-500 text-white transition-colors duration-300" title="Toggle dark/light mode">
+      <svg id="themeIconMoon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+      <svg id="themeIconSun" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    </button>
 
     <!-- Mode Badge -->
     {% if session.get("role") == "admin" %}
@@ -59,8 +73,20 @@
   <div id="netbot-panel">
 
     <div id="netbot-header">
-      NetBot AI
-      <span id="netbot-close">✖</span>
+      <span>NetBot AI</span>
+      <div class="flex items-center gap-2">
+        <button id="netbot-export" title="Export chat" style="background:none;border:none;color:#38bdf8;cursor:pointer;font-size:14px;">📋</button>
+        <span id="netbot-close">✖</span>
+      </div>
+    </div>
+
+    <!-- Suggested prompts (item 6.3) -->
+    <div id="netbot-suggestions">
+      <button class="netbot-chip" data-msg="Start a quick scan">🔍 Quick Scan</button>
+      <button class="netbot-chip" data-msg="Analyze my report">📄 Analyze Report</button>
+      <button class="netbot-chip" data-msg="Show remediation fixes">🔧 Show Fixes</button>
+      <button class="netbot-chip" data-msg="Assess the risk level">⚠️ Risk Assessment</button>
+      <button class="netbot-chip" data-msg="Troubleshoot open ports">🛠️ Troubleshoot</button>
     </div>
 
     <div id="netbot-messages"></div>
@@ -79,5 +105,45 @@
     </div>
 
   </div>
+
+  <!-- Device Detail Modal (item 2.3) -->
+  <div id="deviceModal" class="device-modal-overlay" style="display:none;">
+    <div class="device-modal">
+      <div class="device-modal-header">
+        <h3 id="modalTitle">Device Details</h3>
+        <button id="modalClose" class="device-modal-close">✕</button>
+      </div>
+      <div id="modalContent" class="device-modal-body">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan History Modal (item 2.1) -->
+  <div id="historyModal" class="device-modal-overlay" style="display:none;">
+    <div class="device-modal" style="max-width:700px;">
+      <div class="device-modal-header">
+        <h3>📜 Scan History</h3>
+        <button id="historyClose" class="device-modal-close">✕</button>
+      </div>
+      <div id="historyContent" class="device-modal-body">
+        <p class="text-slate-400 text-sm">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scan Diff Modal (item 3.3) -->
+  <div id="diffModal" class="device-modal-overlay" style="display:none;">
+    <div class="device-modal" style="max-width:700px;">
+      <div class="device-modal-header">
+        <h3>🔀 Scan Diff</h3>
+        <button id="diffClose" class="device-modal-close">✕</button>
+      </div>
+      <div id="diffContent" class="device-modal-body">
+        <p class="text-slate-400 text-sm">Loading...</p>
+      </div>
+    </div>
+  </div>
+
   </body>
 </html>

@@ -5,29 +5,34 @@ class MCP:
 
     def route(self, intent, payload):
 
+        context = payload.get("context", [])
+
         # PDF Summary
         if intent == "pdf":
             text = self.agents["pdf"].analyze(payload["pdf"])
             return text, "pdf"
 
-        # Manual Verify
+        # Manual Verify / Risk Assessment
         if intent == "risk":
             text = self.agents["risk"].manual_verify(
-                payload.get("pdf") or payload.get("prompt", "")
+                payload.get("pdf") or payload.get("prompt", ""),
+                context=context
             )
             return text, "risk"
 
         # Remediation
         if intent == "remedy":
             text = self.agents["remedy"].recommend(
-                payload.get("pdf") or payload.get("prompt", "")
+                payload.get("pdf") or payload.get("prompt", ""),
+                context=context
             )
             return text, "remedy"
 
         # Troubleshooting
         if intent == "trouble":
             text = self.agents["trouble"].diagnose(
-                payload.get("pdf") or payload.get("prompt", "")
+                payload.get("pdf") or payload.get("prompt", ""),
+                context=context
             )
             return text, "trouble"
 

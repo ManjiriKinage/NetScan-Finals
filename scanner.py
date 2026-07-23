@@ -7,6 +7,22 @@ from rules import WEAK_PORTS, check_version
 from nvd_api import fetch_cve
 from rules import FIX_RECOMMENDATIONS
 
+# Scan profile configurations
+SCAN_PROFILES = {
+    "quick": {
+        "args": "-sV -T4 --top-ports 100",
+        "label": "Quick Scan (Top 100 ports)"
+    },
+    "standard": {
+        "args": "-sV -T4 --top-ports 1000",
+        "label": "Standard Scan (Top 1000 ports)"
+    },
+    "deep": {
+        "args": "-sV -T4 -p-",
+        "label": "Deep Scan (All 65535 ports)"
+    }
+}
+
 def ensure_nmap_available():
     return bool(shutil.which("nmap") or shutil.which("nmap.exe"))
 
@@ -23,15 +39,26 @@ def build_ip_list(subnet):
              raise ValueError(f"Invalid IP or subnet format: {subnet}")
 
 
-def scan_network(subnet, progress_callback=None):
+def scan_network(subnet, progress_callback=None, profile="standard", os_detect=False):
     """
-    Runs an nmap -sV scan over the subnet.
+    Runs an nmap scan over the subnet.
     progress_callback(event_type, payload)
       - event_type: 'log' | 'progress' | 'device'
       - payload: string or dict
+    profile: 'quick' | 'standard' | 'deep'
+    os_detect: if True, adds -O flag for OS detection
     """
+    # Get scan arguments from profile
+    profile_config = SCAN_PROFILES.get(profile, SCAN_PROFILES["standard"])
+    scan_args = profile_config["args"]
+
+    # Add OS detection if requested
+    if os_detect:
+        scan_args += " -O"
+
     if progress_callback:
         progress_callback('log', f"Starting scan for subnet: {subnet}")
+        progress_callback('log', f"Profile: {profile_config['label']}")
 
     if not ensure_nmap_available():
         raise RuntimeError("nmap_binary_not_found: nmap executable not found in PATH. Install nmap and add to PATH.")
@@ -46,7 +73,7 @@ def scan_network(subnet, progress_callback=None):
         try:
             if progress_callback:
                 progress_callback('log', f"Scanning {ip}...")
-            scanner.scan(ip, arguments='-sV -T4')
+            scanner.scan(ip, arguments=scan_args)
         except Exception as e:
             if progress_callback:
                 progress_callback('log', f"Warning: scan failed for {ip}: {e}")
@@ -65,8 +92,23 @@ def scan_network(subnet, progress_callback=None):
             "host": ip,
             "services": [],
             "vulnerabilities": [],
-            "severity_score": 0
+            "severity_score": 0,
+            "os": None
         }
+
+        # Extract OS detection info if available
+        try:
+            if os_detect and 'osmatch' in scanner[ip]:
+                os_matches = scanner[ip]['osmatch']
+                if os_matches:
+                    best_match = os_matches[0]
+                    device["os"] = {
+                        "name": best_match.get("name", "Unknown"),
+                        "accuracy": best_match.get("accuracy", "0"),
+                        "type": best_match.get("osclass", [{}])[0].get("type", "Unknown") if best_match.get("osclass") else "Unknown"
+                    }
+        except Exception:
+            pass
 
         try:
             for proto in scanner[ip].all_protocols():

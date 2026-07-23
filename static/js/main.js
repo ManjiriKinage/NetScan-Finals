@@ -17,6 +17,8 @@ let pollInterval = null;
 let currentJob = null;
 let isScanning = false;
 let netbotPdfPath = null;
+let lastScanResults = null;  // Store results for export
+let riskChart = null;  // Chart.js instance
 
 function appendLog(text) {
   const time = new Date().toLocaleTimeString();
@@ -24,6 +26,147 @@ function appendLog(text) {
   log.scrollTop = log.scrollHeight;
   lastUpdated.textContent = new Date().toLocaleTimeString();
 }
+
+// ──────────────────────────────────────────────
+// RISK CHART (item 2.2) — Chart.js Doughnut
+// ──────────────────────────────────────────────
+
+function initRiskChart() {
+  const ctx = document.getElementById('riskChart');
+  if (!ctx) return;
+
+  riskChart = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Critical', 'High', 'Medium', 'Low'],
+      datasets: [{
+        data: [0, 0, 0, 0],
+        backgroundColor: [
+          'rgba(251, 113, 133, 0.9)',   // rose-400
+          'rgba(251, 146, 60, 0.9)',    // orange-400
+          'rgba(252, 211, 77, 0.9)',    // amber-300
+          'rgba(100, 116, 139, 0.7)'   // slate-500
+        ],
+        borderColor: [
+          '#fb7185', '#fb923c', '#fcd34d', '#64748b'
+        ],
+        borderWidth: 2,
+        hoverOffset: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: '#94a3b8',
+            font: { size: 11 },
+            padding: 12
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 800
+      }
+    }
+  });
+}
+
+function updateRiskChart(critical, high, medium, low) {
+  if (!riskChart) return;
+  riskChart.data.datasets[0].data = [critical, high, medium, low];
+  riskChart.update('active');
+}
+
+// Initialize chart on load
+document.addEventListener('DOMContentLoaded', initRiskChart);
+
+
+// ──────────────────────────────────────────────
+// DEVICE DETAIL MODAL (item 2.3)
+// ──────────────────────────────────────────────
+
+function openDeviceModal(dev) {
+  const modal = document.getElementById('deviceModal');
+  const title = document.getElementById('modalTitle');
+  const content = document.getElementById('modalContent');
+  if (!modal) return;
+
+  title.textContent = `🖥️ ${dev.host} — ${dev.risk || 'Info'} Risk`;
+
+  // OS info
+  let osHtml = '';
+  if (dev.os && dev.os.name) {
+    osHtml = `
+      <div class="modal-section">
+        <h4>💻 Operating System</h4>
+        <div class="modal-service-row">
+          <span>${dev.os.name}</span>
+          <span class="text-slate-400">Accuracy: ${dev.os.accuracy}%</span>
+        </div>
+      </div>`;
+  }
+
+  // Services
+  let servicesHtml = '<div class="modal-section"><h4>🔌 Services</h4>';
+  if (dev.services && dev.services.length > 0) {
+    dev.services.forEach(svc => {
+      servicesHtml += `
+        <div class="modal-service-row">
+          <span><strong>Port ${svc.port}</strong></span>
+          <span>${svc.service || 'Unknown'} ${svc.version || ''}</span>
+        </div>`;
+    });
+  } else {
+    servicesHtml += '<p class="text-slate-400 text-sm">No services detected</p>';
+  }
+  servicesHtml += '</div>';
+
+  // Vulnerabilities
+  let vulnsHtml = '<div class="modal-section"><h4>⚠️ Vulnerabilities</h4>';
+  if (dev.vulnerabilities && dev.vulnerabilities.length > 0) {
+    dev.vulnerabilities.forEach(v => {
+      vulnsHtml += `<div class="modal-vuln-item">${v}</div>`;
+    });
+  } else {
+    vulnsHtml += '<p class="text-green-400 text-sm">✅ No vulnerabilities detected</p>';
+  }
+  vulnsHtml += '</div>';
+
+  // Risk score
+  let scoreHtml = `
+    <div class="modal-section">
+      <h4>📊 Risk Summary</h4>
+      <div class="modal-service-row">
+        <span>Severity Score</span>
+        <span class="font-bold ${dev.severity_score >= 9 ? 'text-rose-400' : dev.severity_score >= 7 ? 'text-orange-400' : dev.severity_score >= 4 ? 'text-amber-300' : 'text-green-400'}">${dev.severity_score || 0}</span>
+      </div>
+      <div class="modal-service-row">
+        <span>Risk Level</span>
+        <span class="font-bold">${dev.risk || 'Low'}</span>
+      </div>
+    </div>`;
+
+  content.innerHTML = osHtml + servicesHtml + vulnsHtml + scoreHtml;
+  modal.style.display = 'flex';
+}
+
+// Close modal handlers
+document.addEventListener('DOMContentLoaded', () => {
+  const modalClose = document.getElementById('modalClose');
+  const deviceModal = document.getElementById('deviceModal');
+  if (modalClose) modalClose.onclick = () => deviceModal.style.display = 'none';
+  if (deviceModal) deviceModal.onclick = (e) => { if (e.target === deviceModal) deviceModal.style.display = 'none'; };
+});
+
+
+// ──────────────────────────────────────────────
+// RENDER RESULTS (updated for clickable rows — item 2.3)
+// ──────────────────────────────────────────────
 
 function renderResults(results) {
   resultsContainer.innerHTML = '';
@@ -36,23 +179,300 @@ function renderResults(results) {
   results.forEach(dev => {
     const vulnHtml = dev.vulnerabilities.length === 0
       ? '<div class="text-sm text-green-300">No major vulnerabilities</div>'
-      : '<ul class="text-sm text-rose-200">' + dev.vulnerabilities.map(v => `<li>• ${v}</li>`).join('') + '</ul>';
+      : '<ul class="text-sm text-rose-200">' + dev.vulnerabilities.slice(0, 3).map(v => `<li>• ${v}</li>`).join('') + (dev.vulnerabilities.length > 3 ? `<li class="text-slate-400">+ ${dev.vulnerabilities.length - 3} more...</li>` : '') + '</ul>';
+
+    // OS badge
+    const osBadge = dev.os && dev.os.name
+      ? `<span class="text-xs px-2 py-0.5 rounded bg-indigo-800 text-indigo-200 ml-2">${dev.os.name}</span>`
+      : '';
 
     const el = document.createElement('div');
     // use border-black to match your theme
-    el.className = 'p-3 bg-slate-900/30 rounded border border-black';
+    el.className = 'p-3 bg-slate-900/30 rounded border border-black device-row';
     el.innerHTML = `
       <div class="flex items-center justify-between">
-        <div class="font-medium text-slate-100">${dev.host}</div>
+        <div class="font-medium text-slate-100">${dev.host}${osBadge}</div>
         <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white">
           ${dev.risk || "Info"}
         </span>
       </div>
       <div class="mt-2">${vulnHtml}</div>
+      <div class="text-xs text-slate-500 mt-1">Click for details →</div>
     `;
+    el.addEventListener('click', () => openDeviceModal(dev));
     resultsContainer.appendChild(el);
   });
 }
+
+
+// ──────────────────────────────────────────────
+// EXPORT CSV/JSON (item 2.4)
+// ──────────────────────────────────────────────
+
+function exportCSV() {
+  if (!lastScanResults || lastScanResults.length === 0) {
+    alert('No scan results to export');
+    return;
+  }
+
+  let csv = 'Host,Risk,Severity Score,OS,Services Count,Vulnerabilities Count,Vulnerabilities\n';
+  lastScanResults.forEach(dev => {
+    const os = (dev.os && dev.os.name) || 'Unknown';
+    const vulns = (dev.vulnerabilities || []).join(' | ').replace(/"/g, '""');
+    csv += `"${dev.host}","${dev.risk || 'Low'}",${dev.severity_score || 0},"${os}",${(dev.services || []).length},${(dev.vulnerabilities || []).length},"${vulns}"\n`;
+  });
+
+  downloadFile(csv, 'netscan_results.csv', 'text/csv');
+}
+
+function exportJSON() {
+  if (!lastScanResults || lastScanResults.length === 0) {
+    alert('No scan results to export');
+    return;
+  }
+
+  const json = JSON.stringify(lastScanResults, null, 2);
+  downloadFile(json, 'netscan_results.json', 'application/json');
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Make export functions globally available
+window.exportCSV = exportCSV;
+window.exportJSON = exportJSON;
+
+
+// ──────────────────────────────────────────────
+// SCAN DIFF (item 3.3)
+// ──────────────────────────────────────────────
+
+async function showScanDiff() {
+  if (!currentJob && !lastCompletedJob) {
+    alert('No completed scan to compare');
+    return;
+  }
+
+  const jobId = lastCompletedJob || currentJob;
+  const diffModal = document.getElementById('diffModal');
+  const diffContent = document.getElementById('diffContent');
+  if (!diffModal) return;
+
+  diffContent.innerHTML = '<p class="text-slate-400 text-sm">Loading diff...</p>';
+  diffModal.style.display = 'flex';
+
+  try {
+    const res = await fetch(`/scan-diff/${jobId}`);
+    const data = await res.json();
+
+    if (data.error && !data.diff) {
+      diffContent.innerHTML = `<p class="text-slate-400 text-sm">${data.error}</p>`;
+      return;
+    }
+
+    const diff = data.diff;
+    let html = '';
+
+    html += `<div class="modal-section"><h4>🆕 New Vulnerabilities (${diff.new.length})</h4>`;
+    if (diff.new.length > 0) {
+      diff.new.forEach(v => { html += `<div class="diff-new">+ ${v}</div>`; });
+    } else {
+      html += '<p class="text-green-400 text-sm">No new vulnerabilities</p>';
+    }
+    html += '</div>';
+
+    html += `<div class="modal-section"><h4>✅ Resolved Vulnerabilities (${diff.resolved.length})</h4>`;
+    if (diff.resolved.length > 0) {
+      diff.resolved.forEach(v => { html += `<div class="diff-resolved">- ${v}</div>`; });
+    } else {
+      html += '<p class="text-slate-400 text-sm">No resolved vulnerabilities</p>';
+    }
+    html += '</div>';
+
+    html += `<div class="modal-section"><h4>📊 Summary</h4>
+      <div class="modal-service-row"><span>Unchanged</span><span>${diff.unchanged_count}</span></div>
+    </div>`;
+
+    diffContent.innerHTML = html;
+  } catch (e) {
+    diffContent.innerHTML = `<p class="text-rose-400 text-sm">Error loading diff: ${e}</p>`;
+  }
+}
+
+window.showScanDiff = showScanDiff;
+
+let lastCompletedJob = null;
+
+// Close diff modal
+document.addEventListener('DOMContentLoaded', () => {
+  const diffClose = document.getElementById('diffClose');
+  const diffModal = document.getElementById('diffModal');
+  if (diffClose) diffClose.onclick = () => diffModal.style.display = 'none';
+  if (diffModal) diffModal.onclick = (e) => { if (e.target === diffModal) diffModal.style.display = 'none'; };
+});
+
+
+// ──────────────────────────────────────────────
+// SCAN HISTORY (item 2.1)
+// ──────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  const historyBtn = document.getElementById('historyBtn');
+  const historyModal = document.getElementById('historyModal');
+  const historyClose = document.getElementById('historyClose');
+  const historyContent = document.getElementById('historyContent');
+
+  if (historyBtn) {
+    historyBtn.onclick = async () => {
+      historyModal.style.display = 'flex';
+      historyContent.innerHTML = '<p class="text-slate-400 text-sm">Loading...</p>';
+
+      try {
+        const res = await fetch('/scan-history');
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          historyContent.innerHTML = '<p class="text-slate-400 text-sm">No scan history yet. Complete a scan first.</p>';
+          return;
+        }
+
+        let html = '';
+        data.forEach(scan => {
+          const date = scan.started_at ? new Date(scan.started_at * 1000).toLocaleString() : 'Unknown';
+          const statusColor = scan.status === 'done' ? 'text-green-400' : scan.status === 'error' ? 'text-rose-400' : 'text-slate-400';
+          html += `
+            <div class="history-row">
+              <div>
+                <div class="text-sm font-medium text-slate-200">${scan.subnet}</div>
+                <div class="text-xs text-slate-400">${date} · ${scan.profile || 'standard'}</div>
+              </div>
+              <div class="text-right">
+                <div class="${statusColor} text-sm font-medium">${scan.status}</div>
+                <div class="text-xs text-slate-400">${scan.total_devices} devices · ${scan.critical_devices} critical</div>
+              </div>
+              ${scan.pdf ? `<a href="${scan.pdf}" class="ml-2 text-xs text-emerald-400 hover:underline">📥 PDF</a>` : ''}
+            </div>`;
+        });
+        historyContent.innerHTML = html;
+      } catch (e) {
+        historyContent.innerHTML = `<p class="text-rose-400 text-sm">Error: ${e}</p>`;
+      }
+    };
+  }
+
+  if (historyClose) historyClose.onclick = () => historyModal.style.display = 'none';
+  if (historyModal) historyModal.onclick = (e) => { if (e.target === historyModal) historyModal.style.display = 'none'; };
+});
+
+
+// ──────────────────────────────────────────────
+// SCHEDULED SCANS (item 3.1)
+// ──────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  const scheduleBtn = document.getElementById('scheduleBtn');
+
+  if (scheduleBtn) {
+    scheduleBtn.onclick = async () => {
+      const subnet = document.getElementById('subnet').value.trim();
+      const delay = parseInt(document.getElementById('scheduleDelay').value) || 5;
+      const profile = document.querySelector('input[name="scanProfile"]:checked')?.value || 'standard';
+
+      if (!subnet) {
+        appendLog('Please provide subnet for scheduled scan');
+        return;
+      }
+
+      try {
+        const res = await fetch('/schedule-scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subnet, delay_minutes: delay, profile })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          appendLog(`⏰ Scan scheduled: ${subnet} in ${delay} minutes (ID: ${data.schedule_id})`);
+          refreshScheduledList();
+        } else {
+          appendLog(`⚠️ Schedule failed: ${data.error}`);
+        }
+      } catch (e) {
+        appendLog('Schedule failed: ' + e);
+      }
+    };
+  }
+
+  refreshScheduledList();
+});
+
+async function refreshScheduledList() {
+  const list = document.getElementById('scheduledList');
+  if (!list) return;
+
+  try {
+    const res = await fetch('/scheduled-scans');
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      list.innerHTML = '<span class="text-slate-500">No scheduled scans</span>';
+      return;
+    }
+
+    list.innerHTML = data.map(s => {
+      const time = new Date(s.run_at * 1000).toLocaleTimeString();
+      const color = s.status === 'pending' ? 'text-amber-300' : s.status === 'running' ? 'text-green-400' : 'text-slate-500';
+      return `<div class="flex justify-between items-center"><span>${s.subnet}</span><span class="${color}">${s.status} · ${time}</span></div>`;
+    }).join('');
+  } catch (e) {
+    // Silently ignore on first load
+  }
+}
+
+
+// ──────────────────────────────────────────────
+// THEME TOGGLE (item 2.5)
+// ──────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('themeToggle');
+  const moonIcon = document.getElementById('themeIconMoon');
+  const sunIcon = document.getElementById('themeIconSun');
+
+  // Restore saved theme
+  if (localStorage.getItem('netscan-theme') === 'light') {
+    document.body.classList.add('light-mode');
+    if (moonIcon) moonIcon.classList.add('hidden');
+    if (sunIcon) sunIcon.classList.remove('hidden');
+  }
+
+  if (toggle) {
+    toggle.onclick = () => {
+      document.body.classList.toggle('light-mode');
+      const isLight = document.body.classList.contains('light-mode');
+      localStorage.setItem('netscan-theme', isLight ? 'light' : 'dark');
+
+      if (moonIcon && sunIcon) {
+        moonIcon.classList.toggle('hidden', isLight);
+        sunIcon.classList.toggle('hidden', !isLight);
+      }
+    };
+  }
+});
+
+
+// ──────────────────────────────────────────────
+// START / CANCEL SCAN (updated for profiles — item 3.2)
+// ──────────────────────────────────────────────
 
 async function startScan() {
 
@@ -63,13 +483,15 @@ async function startScan() {
   }
 
   const subnet = document.getElementById('subnet').value.trim();
+  const profile = document.querySelector('input[name="scanProfile"]:checked')?.value || 'standard';
+  const osDetect = document.getElementById('osDetect')?.checked || false;
 
   if (!subnet) {
     appendLog('Please provide subnet');
     return;
   }
 
-  appendLog(`Starting scan for ${subnet}...`);
+  appendLog(`Starting ${profile} scan for ${subnet}...`);
 
   isScanning = true;
   scanBtn.innerHTML = "Cancel Scan";
@@ -88,7 +510,7 @@ async function startScan() {
     const res = await fetch('/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subnet })
+      body: JSON.stringify({ subnet, profile, os_detect: osDetect })
     });
 
     const data = await res.json();
@@ -110,7 +532,7 @@ async function cancelScan() {
 
   if (!currentJob) return;
 
-  appendLog("Cancelling scan...");
+  appendLog("Cancelling scan... waiting for partial report...");
 
   try {
 
@@ -118,13 +540,23 @@ async function cancelScan() {
       method: "POST"
     });
 
-    appendLog("Scan cancelled. Partial report generated.");
+    // Update button to show we're waiting for the partial report
+    scanBtn.innerHTML = "Cancelling...";
+    scanBtn.disabled = true;
+
+    const mail = document.getElementById("mailStatus");
+    if (mail) {
+      mail.textContent = "Cancelling...";
+      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-orange-500 text-white";
+    }
+
+    // Don't call resetUI() — keep polling alive so the frontend
+    // picks up the partial AI summary + PDF once the backend finishes
 
   } catch (e) {
     appendLog("Cancel failed: " + e);
+    resetUI();
   }
-
-  resetUI();
 }
 
 function resetUI() {
@@ -194,11 +626,17 @@ async function pollStatus(jobId) {
     // AI Summary
     const aiBox = document.getElementById("aiSummary");
     if (aiBox && data.ai_summary) {
-      aiBox.textContent = data.ai_summary;
+      // Render AI summary as markdown if marked is available
+      if (typeof marked !== 'undefined') {
+        aiBox.innerHTML = marked.parse(data.ai_summary);
+      } else {
+        aiBox.textContent = data.ai_summary;
+      }
     }
 
     // --- QUICK STATS UPDATE (safe checks) ---
     const results = data.results || [];
+    lastScanResults = results;  // Store for export
     const devices = results.length;
     let vulnCount = 0;
     let critical = 0, high = 0, medium = 0, low = 0;
@@ -214,18 +652,8 @@ async function pollStatus(jobId) {
       }
     });
 
-    const riskBox = document.getElementById("riskBox");
-
-    if (riskBox) {
-      riskBox.innerHTML = `
-        <div class="grid grid-cols-2 gap-2 text-sm">
-          <div class="text-rose-400 font-semibold">Critical: ${critical}</div>
-          <div class="text-orange-400 font-semibold">High: ${high}</div>
-          <div class="text-amber-300 font-semibold">Medium: ${medium}</div>
-          <div class="text-slate-400 font-semibold">Low: ${low}</div>
-        </div>
-      `;
-    }
+    // Update Chart.js doughnut (item 2.2)
+    updateRiskChart(critical, high, medium, low);
 
     if (statDevices) statDevices.textContent = devices;
     if (statVulns) statVulns.textContent = vulnCount;
@@ -260,6 +688,12 @@ async function pollStatus(jobId) {
       Download Report
     </button>
   `;
+
+  // Show export buttons (item 2.4)
+  const csvBtn = document.getElementById('exportCsvBtn');
+  const jsonBtn = document.getElementById('exportJsonBtn');
+  if (csvBtn) csvBtn.classList.remove('hidden');
+  if (jsonBtn) jsonBtn.classList.remove('hidden');
 }
 
 
@@ -269,20 +703,45 @@ if (data.status === 'done' || data.status === 'cancelled') {
 
   if (pollInterval) clearInterval(pollInterval);
 
+  lastCompletedJob = jobId;
   isScanning = false;
   currentJob = null;
 
-  // Reset only button + status (NOT pdf)
+  // Show diff button (item 3.3)
+  const diffBtn = document.getElementById('diffBtn');
+  if (diffBtn) diffBtn.classList.remove('hidden');
+
+  // Auto-attach PDF to NetBot (item 6.4)
+  if (data.pdf && !netbotPdfPath) {
+    netbotPdfPath = data.pdf;
+    const netMsg = document.getElementById("netbot-messages");
+    if (netMsg) {
+      const div = document.createElement("div");
+      div.className = "netbot-bot";
+      div.innerHTML = "📄 <strong>Latest scan report auto-attached.</strong> You can now ask me to analyze it!";
+      netMsg.appendChild(div);
+    }
+  }
+
+  // Reset button (re-enable in case cancel disabled it)
   scanBtn.innerHTML = "Start Scan";
+  scanBtn.disabled = false;
   scanBtn.classList.remove("bg-rose-600");
   scanBtn.classList.add("from-rose-500","via-orange-400","to-amber-300");
 
   const mail = document.getElementById("mailStatus");
   if (mail) {
-    mail.textContent = "Completed";
-    mail.className =
-      "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+    if (data.status === 'cancelled') {
+      mail.textContent = "Cancelled (Partial)";
+      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-orange-500 text-white";
+    } else {
+      mail.textContent = "Completed";
+      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+    }
   }
+
+  // Refresh scheduled scans list
+  refreshScheduledList();
 } 
   } catch (e) {
     appendLog('Status poll failed: ' + e);
@@ -293,7 +752,10 @@ if (data.status === 'done' || data.status === 'cancelled') {
 
 scanBtn.addEventListener('click', startScan);
 
-// NETBOT UI (Safe Init)
+// ──────────────────────────────────────────────
+// NETBOT UI (Safe Init) — with typing indicator, markdown, chips, export
+// ──────────────────────────────────────────────
+
 document.addEventListener("DOMContentLoaded", () => {
 
   const netBtn = document.getElementById("netbot-btn");
@@ -304,6 +766,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const netInput = document.getElementById("netbot-text");
   const netMsg = document.getElementById("netbot-messages");
   const netFile = document.getElementById("netbot-file");
+  const netExport = document.getElementById("netbot-export");
 
   // If NetBot not present on page → skip safely
   if (!netBtn || !netPanel) return;
@@ -316,30 +779,76 @@ document.addEventListener("DOMContentLoaded", () => {
     netPanel.style.display = "none";
   };
 
-  function addMsg(text, cls) {
-
-  const div = document.createElement("div");
-  div.className = cls;
-
-  // Preserve formatting
-  div.style.whiteSpace = "pre-wrap";
-  div.style.wordBreak = "break-word";
-
-  let i = 0;
-
-  function type() {
-    if (i < text.length) {
-      div.textContent += text.charAt(i++);
-      setTimeout(type, 6);
-    }
+  // ── Typing Indicator (item 6.1) ──
+  function showTyping() {
+    const indicator = document.createElement("div");
+    indicator.className = "typing-indicator";
+    indicator.id = "netbot-typing";
+    indicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    netMsg.appendChild(indicator);
+    netMsg.scrollTop = netMsg.scrollHeight;
   }
 
-  netMsg.appendChild(div);
-  type();
+  function hideTyping() {
+    const indicator = document.getElementById("netbot-typing");
+    if (indicator) indicator.remove();
+  }
 
-  netMsg.scrollTop = netMsg.scrollHeight;
-}
+  // ── Add Message (updated for markdown — item 6.2) ──
+  function addMsg(text, cls) {
+    const div = document.createElement("div");
+    div.className = cls;
 
+    if (cls === "netbot-bot" && typeof marked !== 'undefined') {
+      // Render markdown for bot messages
+      div.innerHTML = marked.parse(text);
+    } else {
+      // User messages: preserve formatting, use typing effect
+      div.style.whiteSpace = "pre-wrap";
+      div.style.wordBreak = "break-word";
+
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          div.textContent += text.charAt(i++);
+          setTimeout(type, 6);
+        }
+      }
+      type();
+    }
+
+    netMsg.appendChild(div);
+    netMsg.scrollTop = netMsg.scrollHeight;
+  }
+
+  // ── Suggested Prompt Chips (item 6.3) ──
+  const chips = document.querySelectorAll('.netbot-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const msg = chip.getAttribute('data-msg');
+      if (msg) {
+        netInput.value = msg;
+        sendNetBot();
+      }
+    });
+  });
+
+  // ── Chat Export (item 6.5) ──
+  if (netExport) {
+    netExport.onclick = () => {
+      const messages = netMsg.querySelectorAll('.netbot-user, .netbot-bot');
+      let chatText = "NetBot Chat Export\n" + "=".repeat(40) + "\n\n";
+
+      messages.forEach(msg => {
+        const role = msg.classList.contains('netbot-user') ? 'You' : 'NetBot';
+        chatText += `[${role}]: ${msg.textContent.trim()}\n\n`;
+      });
+
+      downloadFile(chatText, 'netbot_chat.txt', 'text/plain');
+    };
+  }
+
+  // ── Send Message ──
   async function sendNetBot() {
 
   const msg = netInput.value.trim();
@@ -347,6 +856,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   addMsg(msg, "netbot-user");
   netInput.value = "";
+
+  // Show typing indicator (item 6.1)
+  showTyping();
 
   try {
 
@@ -367,6 +879,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (!upload.ok) {
+        hideTyping();
         addMsg("⚠️ PDF upload failed.", "netbot-bot");
         return;
       }
@@ -384,10 +897,12 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: msg,
-        context: [],
+        session: NETBOT_SESSION,
         pdf_path: netbotPdfPath
       })
     });
+
+    hideTyping();
 
     if (!res.ok) {
       addMsg("⚠️ NetBot server error.", "netbot-bot");
@@ -434,6 +949,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   } catch (err) {
 
+    hideTyping();
     console.error(err);
     addMsg("⚠️ Network error.", "netbot-bot");
   }
