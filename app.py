@@ -448,11 +448,6 @@ def is_strong_password(password):
 @app.route("/admin/register", methods=["POST"])
 def admin_register():
     data = request.get_json()
-    invite_code = data.get("invite_code")
-    expected_code = os.getenv("ADMIN_INVITE_CODE", "default_secret_code")
-    
-    if invite_code != expected_code:
-        return jsonify({"error": "Invalid invite code"}), 403
         
     email = data.get("email")
     password = data.get("password")
