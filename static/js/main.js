@@ -892,13 +892,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Send message AFTER upload
+    // Include subnet from the input field so netbot can use it for scans
+    const subnetInput = document.getElementById('subnet');
+    const subnetValue = subnetInput ? subnetInput.value.trim() : '';
     const res = await fetch("/netbot/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: msg,
         session: NETBOT_SESSION,
-        pdf_path: netbotPdfPath
+        pdf_path: netbotPdfPath,
+        subnet: subnetValue,
+        job_id: currentJob
       })
     });
 
@@ -941,10 +946,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // If the reply indicates scan was cancelled, reset the main UI
+    // If the reply indicates scan was cancelled, update the UI
+    // Don't call resetUI() — the polling loop will handle the final state
+    // once the backend finishes generating the partial report
     if (data.reply && (data.reply.includes("cancelled") || data.reply.includes("Scan cancelled"))) {
       appendLog("Scan cancelled via NetBot.");
-      resetUI();
+      scanBtn.innerHTML = "Cancelling...";
+      scanBtn.disabled = true;
     }
 
   } catch (err) {

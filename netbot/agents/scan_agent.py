@@ -20,9 +20,11 @@ class ScanAgent:
         # Default subnet
         return "192.168.0.0/24"
 
-    def start_scan(self, prompt, cookies=None):
+    def start_scan(self, prompt, cookies=None, subnet=None):
         """Start a scan via the main /scan endpoint."""
-        subnet = self._extract_subnet(prompt or "")
+        # Priority: explicit subnet from UI > extracted from prompt > default
+        if not subnet:
+            subnet = self._extract_subnet(prompt or "")
         try:
             res = requests.post(
                 f"{self.base_url}/scan",

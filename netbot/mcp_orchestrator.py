@@ -40,7 +40,8 @@ class MCP:
         if intent == "scan_start":
             target = payload.get("prompt")
             cookies = payload.get("cookies")
-            result = self.agents["scan"].start_scan(target, cookies=cookies)
+            subnet = payload.get("subnet")  # From UI input field
+            result = self.agents["scan"].start_scan(target, cookies=cookies, subnet=subnet)
             if "error" in result:
                 return f"⚠️ Could not start scan: {result['error']}", "scan"
             subnet = result.get("subnet", "unknown")

@@ -38,6 +38,8 @@ def netbot_chat():
     session = data.get("session", "default")
     context = SESSIONS[session]
     pdf_path = data.get("pdf_path")
+    subnet = data.get("subnet")  # From the UI subnet input field
+    frontend_job_id = data.get("job_id")  # From the frontend's currentJob
 
     cache_key = make_hash(prompt, context)
 
@@ -49,12 +51,17 @@ def netbot_chat():
     mode = intent.detect(prompt)
     context.append({"role": "user", "content": prompt})
 
+    # Use frontend job_id (tracks scans from both UI and netbot) as priority,
+    # fall back to server-side SCAN_JOBS
+    active_job_id = frontend_job_id or SCAN_JOBS.get(session)
+
     payload = {
         "context": context,
         "prompt": prompt,
         "pdf": pdf_path,
-        "job_id": SCAN_JOBS.get(session),
-        "cookies": {k: v for k, v in request.cookies.items()}
+        "job_id": active_job_id,
+        "cookies": {k: v for k, v in request.cookies.items()},
+        "subnet": subnet
     }
 
     reply, model = mcp.route(mode, payload)
