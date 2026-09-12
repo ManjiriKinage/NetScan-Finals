@@ -4,8 +4,6 @@ fpdf2
 tqdm
 python-dotenv
 requests
-google-generativeai
-supabasea
 google-genai
 openai
 supabase

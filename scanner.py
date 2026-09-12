@@ -39,7 +39,7 @@ def build_ip_list(subnet):
              raise ValueError(f"Invalid IP or subnet format: {subnet}")
 
 
-def scan_network(subnet, progress_callback=None, profile="standard", os_detect=False):
+def scan_network(subnet, progress_callback=None, profile="standard", os_detect=False, cancel_callback=None):
     """
     Runs an nmap scan over the subnet.
     progress_callback(event_type, payload)
@@ -47,6 +47,7 @@ def scan_network(subnet, progress_callback=None, profile="standard", os_detect=F
       - payload: string or dict
     profile: 'quick' | 'standard' | 'deep'
     os_detect: if True, adds -O flag for OS detection
+    cancel_callback: returns True when the scan should stop after the current host
     """
     # Get scan arguments from profile
     profile_config = SCAN_PROFILES.get(profile, SCAN_PROFILES["standard"])
@@ -70,6 +71,11 @@ def scan_network(subnet, progress_callback=None, profile="standard", os_detect=F
     scanned = 0
 
     for ip in ip_list:
+        if cancel_callback and cancel_callback():
+            if progress_callback:
+                progress_callback('log', "Scan cancellation requested.")
+            return results
+
         try:
             if progress_callback:
                 progress_callback('log', f"Scanning {ip}...")

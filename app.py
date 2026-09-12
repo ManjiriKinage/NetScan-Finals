@@ -57,19 +57,17 @@ def run_scan_job(job_id, subnet, role, profile="standard", os_detect=False):
                 elif event_type == 'device':
                     job['results'].append(payload)
 
-            # run scanner (this will call progress_callback)
-            report = []
-            was_cancelled = False
-
-            for item in scan_network(subnet, progress_callback=progress_callback, profile=profile, os_detect=os_detect):
-
-                # Check cancel flag
-                if jobs[job_id].get("cancel"):
-                    jobs[job_id]["logs"].append("Scan cancelled by user. Generating partial report...")
-                    was_cancelled = True
-                    break
-
-                report.append(item)
+            # Stop the scanner before it starts the next host after cancellation.
+            report = scan_network(
+                subnet,
+                progress_callback=progress_callback,
+                profile=profile,
+                os_detect=os_detect,
+                cancel_callback=lambda: jobs.get(job_id, {}).get("cancel", False)
+            )
+            was_cancelled = jobs.get(job_id, {}).get("cancel", False)
+            if was_cancelled:
+                jobs[job_id]["logs"].append("Scan cancelled by user. Generating partial report...")
 
             # Generate AI summary (works for both full and partial reports)
             if report and len(report) > 0:
