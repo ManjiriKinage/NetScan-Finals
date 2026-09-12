@@ -2,16 +2,31 @@ from ai_hash import make_scan_hash
 from ai_cache_supabase import get_cached_summary, save_summary
 
 import openai
+from groq import Groq
 from google import genai
 import os
 
 
 OPENAI_KEY = os.getenv("OPENAI_KEY")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
+GROQ_KEY = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_KEY")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_FALLBACK_MODEL = os.getenv("GROQ_FALLBACK_MODEL", "openai/gpt-oss-20b")
 
 
 openai.api_key = OPENAI_KEY
 genai_client = genai.Client(api_key=GEMINI_KEY)
+
+
+def call_groq(prompt, model):
+    client = Groq(api_key=GROQ_KEY)
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3
+    )
+
+    return resp.choices[0].message.content
 
 
 def call_openai(prompt):
@@ -49,7 +64,22 @@ def summarize_report(report):
 
     prompt = build_prompt(report)
 
-    # Try OpenAI first
+    # Try Groq first, then its smaller fallback model.
+    if GROQ_KEY:
+        for model in (GROQ_MODEL, GROQ_FALLBACK_MODEL):
+            try:
+                print(f"[AI] Using Groq ({model})")
+
+                summary = call_groq(prompt, model)
+
+                save_summary(scan_hash, summary, f"groq:{model}")
+
+                return summary
+
+            except Exception as e:
+                print(f"[AI] Groq ({model}) failed:", e)
+
+    # Try OpenAI next
     try:
 
         print("[AI] Using OpenAI")

@@ -415,7 +415,7 @@ def get_scan_profiles():
 def health():
     return jsonify({
         "status": "ok",
-        "ai": bool(os.getenv("GEMINI_KEY")),
+        "ai": bool(os.getenv("GROQ_API_KEY") or os.getenv("GROQ_KEY") or os.getenv("GEMINI_KEY") or os.getenv("OPENAI_KEY")),
         "email": bool(os.getenv("MAIL_USER")),
         "nvd": bool(os.getenv("NVD_API_KEY"))
     })  
