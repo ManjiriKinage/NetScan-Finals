@@ -532,7 +532,7 @@ async function cancelScan() {
 
   if (!currentJob) return;
 
-  appendLog("Cancelling scan... waiting for partial report...");
+  appendLog("Cancelling scan... waiting for the partial AI summary...");
 
   try {
 
@@ -540,7 +540,7 @@ async function cancelScan() {
       method: "POST"
     });
 
-    // Update button to show we're waiting for the partial report
+    // Keep polling until the current host exits and the partial report is ready.
     scanBtn.innerHTML = "Cancelling...";
     scanBtn.disabled = true;
 
@@ -550,8 +550,7 @@ async function cancelScan() {
       mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-orange-500 text-white";
     }
 
-    // Don't call resetUI() — keep polling alive so the frontend
-    // picks up the partial AI summary + PDF once the backend finishes
+    // Keep polling alive so the frontend receives the partial AI summary and PDF.
 
   } catch (e) {
     appendLog("Cancel failed: " + e);

@@ -67,9 +67,9 @@ def run_scan_job(job_id, subnet, role, profile="standard", os_detect=False):
             )
             was_cancelled = jobs.get(job_id, {}).get("cancel", False)
             if was_cancelled:
-                jobs[job_id]["logs"].append("Scan cancelled by user. Generating partial report...")
+                jobs[job_id]["logs"].append("Scan cancelled by user. Generating AI summary for partial results...")
 
-            # Generate AI summary (works for both full and partial reports)
+            # Generate a summary for both complete and cancelled scans.
             if report and len(report) > 0:
                 jobs[job_id]["logs"].append(f"Generating AI summary for {len(report)} device(s)...")
                 ai_summary = summarize_report(report)
