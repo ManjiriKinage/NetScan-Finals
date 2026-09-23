@@ -1,215 +1,372 @@
 {% extends 'base.html' %}
 {% block content %}
-<!--
-  Redesigned dashboard-style scan UI
-  Theme inspired by the provided dark security dashboard:
-  - dark navy background
-  - deep-card surfaces
-  - accent colors: red/orange/yellow for important actions and highlights
-  - subtle glass/blur and soft shadows
--->
 
-<div class="min-h-screen py-8 px-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 text-slate-100">
-  <div class="max-w-7xl mx-auto">
+<div class="py-6 px-4 sm:px-6 lg:px-8 xl:px-10 w-full space-y-6">
 
-    <!-- Top bar -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-4">
-        <!-- small logo -->
-        <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-rose-500 via-orange-400 to-amber-300 flex items-center justify-center shadow-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7M7 7V5a5 5 0 0110 0v2" />
+  <!-- Top Hero & Stats Row -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <!-- Stat 1: Devices -->
+    <div class="stat-card flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Discovered Devices</p>
+        <h3 id="statDevices" class="text-3xl font-extrabold text-white font-mono">0</h3>
+        <p class="text-[11px] text-cyan-400 mt-1 flex items-center gap-1 font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
-        </div>
-        <div>
-          <h1 class="text-2xl font-semibold">NetScan</h1>
-          <p class="text-sm text-slate-300">Local Vulnerability Scanner</p>
-        </div>
+          Subnet Live Hosts
+        </p>
       </div>
-
-      <div class="flex items-center gap-4">
-        <div class="text-sm text-slate-300">Status: <span id="mailStatus" class="ml-2 inline-block px-2 py-0.5 rounded bg-slate-500 text-white"> Idle</span></div>
-        
+      <div class="stat-icon bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
       </div>
     </div>
 
-    <!-- Main grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Stat 2: Vulnerabilities -->
+    <div class="stat-card flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Identified CVEs</p>
+        <h3 id="statVulns" class="text-3xl font-extrabold text-rose-400 font-mono">0</h3>
+        <p class="text-[11px] text-rose-400/80 mt-1 flex items-center gap-1 font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          Threat Vectors Detected
+        </p>
+      </div>
+      <div class="stat-icon bg-rose-500/10 border border-rose-500/20 text-rose-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+    </div>
 
-      <!-- Left column: Controls -->
-      <div class="lg:col-span-1 space-y-6">
-        <div class="bg-slate-800/60 backdrop-blur-sm border border-slate-700 rounded-lg p-4 shadow-md">
-          <h2 class="text-lg font-medium text-slate-100 mb-3">Scan Configuration</h2>
+    <!-- Stat 3: Generated Reports -->
+    <div class="stat-card flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Security Reports</p>
+        <h3 id="statReports" class="text-3xl font-extrabold text-emerald-400 font-mono">0</h3>
+        <p class="text-[11px] text-emerald-400/80 mt-1 flex items-center gap-1 font-medium">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          PDF & Email Deliveries
+        </p>
+      </div>
+      <div class="stat-icon bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+    </div>
 
-          <label class="block text-slate-300 text-sm mb-1">Subnet</label>
-          <input id="subnet" class="w-full rounded-md bg-slate-900/60 border border-slate-700 text-slate-100 p-2 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-400" value="192.168.1.0/24" />
+    <!-- Stat 4: Scanner State -->
+    <div class="stat-card flex items-center justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Execution Status</p>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="mailStatus" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700">
+            Idle
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2">Nmap engine standing by</p>
+      </div>
+      <div class="stat-icon bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+    </div>
 
-          <!-- Scan Profile Selector (item 3.2) -->
-          <label class="block text-slate-300 text-sm mb-1 mt-3">Scan Profile</label>
-          <div class="flex gap-2">
-            <label class="flex-1 cursor-pointer">
+  </div>
+
+  <!-- Main Dashboard Grid (2 Columns: Left Controls & Charts, Right Terminal & Results) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <!-- LEFT COLUMN: SCAN CONTROLS & CHARTS (4 cols) -->
+    <div class="lg:col-span-4 space-y-6">
+
+      <!-- Scan Configuration Card -->
+      <div class="glass-panel-glow rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-5">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            </div>
+            <h2 class="text-base font-bold text-white tracking-tight">Scan Configuration</h2>
+          </div>
+          <span class="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">CIDR IPv4</span>
+        </div>
+
+        <!-- Target Subnet Input -->
+        <div class="space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">Target Subnet / Host</label>
+          <div class="relative">
+            <input id="subnet" class="glass-input w-full rounded-xl text-slate-100 p-3 pl-10 text-sm font-mono placeholder-slate-500 outline-none" value="192.168.1.0/24" placeholder="e.g. 192.168.1.0/24" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+          </div>
+          <div class="flex gap-1.5 pt-1">
+            <button onclick="document.getElementById('subnet').value='192.168.1.0/24'" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 font-mono transition">192.168.1.0/24</button>
+            <button onclick="document.getElementById('subnet').value='127.0.0.1'" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 font-mono transition">localhost</button>
+            <button onclick="document.getElementById('subnet').value='10.0.0.0/24'" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-cyan-300 font-mono transition">10.0.0.0/24</button>
+          </div>
+        </div>
+
+        <!-- Scan Profiles Selector -->
+        <div class="mt-5 space-y-2">
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300">Scan Profile</label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer">
               <input type="radio" name="scanProfile" value="quick" class="hidden peer" />
-              <div class="text-center text-xs py-2 px-1 rounded-md border border-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-400/10 peer-checked:text-amber-300 text-slate-400 hover:border-slate-500 transition-colors">
-                ⚡ Quick
+              <div class="text-center py-2.5 px-2 rounded-xl border border-slate-700 bg-slate-900/60 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/15 peer-checked:text-cyan-300 text-slate-400 hover:border-slate-600 transition-all">
+                <div class="text-sm">⚡</div>
+                <div class="text-xs font-bold mt-0.5">Quick</div>
               </div>
             </label>
-            <label class="flex-1 cursor-pointer">
+
+            <label class="cursor-pointer">
               <input type="radio" name="scanProfile" value="standard" class="hidden peer" checked />
-              <div class="text-center text-xs py-2 px-1 rounded-md border border-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-400/10 peer-checked:text-amber-300 text-slate-400 hover:border-slate-500 transition-colors">
-                🔍 Standard
+              <div class="text-center py-2.5 px-2 rounded-xl border border-slate-700 bg-slate-900/60 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/15 peer-checked:text-cyan-300 text-slate-400 hover:border-slate-600 transition-all">
+                <div class="text-sm">🔍</div>
+                <div class="text-xs font-bold mt-0.5">Standard</div>
               </div>
             </label>
-            <label class="flex-1 cursor-pointer">
+
+            <label class="cursor-pointer">
               <input type="radio" name="scanProfile" value="deep" class="hidden peer" />
-              <div class="text-center text-xs py-2 px-1 rounded-md border border-slate-600 peer-checked:border-amber-400 peer-checked:bg-amber-400/10 peer-checked:text-amber-300 text-slate-400 hover:border-slate-500 transition-colors">
-                🛡️ Deep
+              <div class="text-center py-2.5 px-2 rounded-xl border border-slate-700 bg-slate-900/60 peer-checked:border-cyan-400 peer-checked:bg-cyan-500/15 peer-checked:text-cyan-300 text-slate-400 hover:border-slate-600 transition-all">
+                <div class="text-sm">🛡️</div>
+                <div class="text-xs font-bold mt-0.5">Deep</div>
               </div>
             </label>
           </div>
+        </div>
 
-          <!-- OS Detection toggle (item 3.4) -->
-          <div class="mt-3 flex items-center gap-2">
-            <input id="osDetect" type="checkbox" class="rounded accent-amber-400" />
-            <label for="osDetect" class="text-xs text-slate-300">Enable OS Detection (requires admin/root)</label>
+        <!-- OS Detection Toggle -->
+        <div class="mt-4 p-3 rounded-xl bg-slate-900/40 border border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <div>
+              <p class="text-xs font-semibold text-slate-200">OS Fingerprinting</p>
+              <p class="text-[11px] text-slate-400">Detect OS & kernel versions (Nmap -O)</p>
+            </div>
           </div>
+          <input id="osDetect" type="checkbox" class="w-4 h-4 rounded accent-cyan-500 cursor-pointer" />
+        </div>
 
-          <div class="mt-4 flex gap-3">
-            <button id="scanBtn" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium shadow-sm
-              bg-gradient-to-r from-rose-500 via-orange-400 to-amber-300 text-slate-900 hover:from-rose-600 hover:to-amber-400">
-              <!-- play icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6 4l10 6-10 6V4z" /></svg>
-              Start Scan
+        <!-- Action Button (Start / Cancel Scan) -->
+        <div class="mt-5">
+          <button id="scanBtn" class="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm font-bold text-white shadow-lg shadow-cyan-500/25 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 transition-all duration-300 transform active:scale-[0.98]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Start Vulnerability Scan
+          </button>
+        </div>
+
+        <!-- Schedule Scan Panel -->
+        <div class="mt-6 pt-5 border-t border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Scheduled Execution
+            </span>
+          </div>
+          <div class="flex gap-2 items-center">
+            <input id="scheduleDelay" type="number" min="1" max="1440" value="30" class="glass-input w-24 rounded-lg text-slate-100 p-2 text-xs font-mono text-center outline-none" />
+            <span class="text-xs text-slate-400">minutes</span>
+            <button id="scheduleBtn" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 hover:border-slate-600 transition">
+              Queue Scan
             </button>
           </div>
+          <div id="scheduledList" class="text-xs text-slate-400 space-y-1 pt-1"></div>
+        </div>
 
-          <!-- Schedule Scan Section (item 3.1) -->
-          <div class="mt-4 border-t border-slate-700 pt-3">
-            <h3 class="text-sm font-medium text-slate-200 mb-2">⏰ Schedule Scan</h3>
-            <div class="flex gap-2 items-center">
-              <input id="scheduleDelay" type="number" min="1" max="1440" value="30" class="w-20 rounded-md bg-slate-900/60 border border-slate-700 text-slate-100 p-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400" />
-              <span class="text-xs text-slate-400">min</span>
-              <button id="scheduleBtn" class="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white transition-colors">
-                Schedule
-              </button>
-            </div>
-            <div id="scheduledList" class="mt-2 text-xs text-slate-400 space-y-1"></div>
+      </div>
+
+      <!-- Threat Severity Breakdown (Chart.js Card) -->
+      <div id="riskBox" class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+            Risk Distribution
+          </h3>
+          <span class="text-[10px] font-semibold text-slate-400 uppercase bg-slate-800 px-2 py-0.5 rounded">CVSS v3</span>
+        </div>
+        
+        <div class="py-2 flex justify-center">
+          <div class="w-48 h-48 relative">
+            <canvas id="riskChart"></canvas>
           </div>
+        </div>
 
-          <div class="mt-4 text-xs text-slate-400">
-            <strong>Tip:</strong> Scanning requires <span class="text-amber-300">Nmap</span> installed and in PATH.
+        <!-- Legend Pills -->
+        <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800 text-xs">
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span>Critical Risk</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+            <span>High Risk</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span>Medium Risk</span>
+          </div>
+          <div class="flex items-center gap-2 text-slate-300">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            <span>Low / Clean</span>
           </div>
         </div>
 
-        <!-- Quick stats card -->
-        <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <h3 class="text-sm font-semibold text-slate-200 mb-3">Quick Stats</h3>
-          <div class="grid grid-cols-3 gap-3">
-            <div class="p-3 bg-slate-900/40 rounded">
-              <div  class="text-xs text-slate-400">Devices</div>
-              <div id="statDevices"  class="text-lg font-bold text-amber-300">0</div>
-            </div>
-            <div class="p-3 bg-slate-900/40 rounded">
-              <div class="text-xs text-slate-400">Vulns</div>
-              <div  id="statVulns"  class="text-lg font-bold text-rose-400">0</div>
-            </div>
-            <div class="p-3 bg-slate-900/40 rounded">
-              <div class="text-xs text-slate-400">Reports</div>
-              <div id="statReports" class="text-lg font-bold text-green-300">0</div>
-            </div>
-            
-          </div>
-          <!-- Risk Distribution Chart (item 2.2) -->
-          <div id="riskBox"
-          class="mt-4 bg-slate-900/60 border border-slate-600 rounded-xl p-5 text-sm space-y-2 w-full">
-            <canvas id="riskChart" width="200" height="200"></canvas>
-            <p class="text-xs text-slate-400 text-center mt-2">Risk distribution will update during scan</p>
-        </div>
-        </div>
-
-        <!-- Small legend -->
-        <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-3 text-xs text-slate-300">
-          <div class="font-medium mb-2">Legend</div>
-          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-rose-400 rounded-full"></span><span>Critical</span></div>
-          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-orange-400 rounded-full"></span><span>High</span></div>
-          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-300 rounded-full"></span><span>Medium</span></div>
-          <div class="flex items-center gap-2"><span class="w-3 h-3 bg-slate-500 rounded-full"></span><span>Low / Info</span></div>
-        </div>
-
-        <!-- Scan History Button (item 2.1) -->
-        <button id="historyBtn" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium shadow-sm bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 transition-colors">
-          📜 Scan History
+        <!-- Scan History Trigger Button -->
+        <button id="historyBtn" class="w-full mt-5 py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900/80 border border-slate-800 hover:bg-slate-800 hover:text-white transition flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          View Historical Audit Logs
         </button>
       </div>
 
-      <!-- Right column: Live logs & results -->
-      <div class="lg:col-span-3 space-y-6">
-        <div class="bg-gradient-to-tr from-slate-800/40 to-slate-700/30 border border-slate-700 rounded-lg p-4 shadow-inner">
-          <div class="flex items-start justify-between">
-            <div>
-              <h2 class="text-lg font-semibold text-slate-100">Live Logs</h2>
-              <p class="text-sm text-slate-400">Real-time output from the scanner. Click <span class="text-amber-300">Start Scan</span> to begin.</p>
-            </div>
+    </div>
 
-            <div class="flex items-center gap-3">
-              <div class="text-sm text-slate-300">Progress</div>
-              <div class="w-48 bg-slate-700 rounded-full h-2 overflow-hidden">
-                <div id="progressBar" class="h-2 bg-rose-500 w-0 transition-all duration-300"></div>
-              </div>
+    <!-- RIGHT COLUMN: LIVE TERMINAL, INVENTORY & AI INTELLIGENCE (8 cols) -->
+    <div class="lg:col-span-8 space-y-6">
+
+      <!-- Live Terminal Console Window -->
+      <div class="terminal-window">
+        
+        <!-- Terminal Header -->
+        <div class="terminal-header">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-rose-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
             </div>
+            <span class="text-xs font-mono font-medium text-slate-400 ml-2">netscan-engine :: live stdout stream</span>
           </div>
 
-          <pre id="log" class="mt-4 h-80 overflow-auto bg-slate-900/50 border border-slate-800 rounded p-4 text-sm text-slate-200 font-mono whitespace-pre-wrap"></pre>
-
-          <div class="mt-4 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div id="pdfLink"></div>
-              <!-- Export buttons (item 2.4) -->
-              <button id="exportCsvBtn" class="hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-emerald-700 hover:bg-emerald-600 text-white transition-colors" onclick="exportCSV()">
-                📊 CSV
-              </button>
-              <button id="exportJsonBtn" class="hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-sky-700 hover:bg-sky-600 text-white transition-colors" onclick="exportJSON()">
-                { } JSON
-              </button>
-              <!-- Diff button (item 3.3) -->
-              <button id="diffBtn" class="hidden inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium bg-violet-700 hover:bg-violet-600 text-white transition-colors" onclick="showScanDiff()">
-                🔀 Compare Previous
-              </button>
+          <!-- Progress Bar & Status -->
+          <div class="flex items-center gap-3">
+            <div class="w-36 bg-slate-900 border border-slate-800 rounded-full h-2 overflow-hidden">
+              <div id="progressBar" class="h-2 bg-gradient-to-r from-cyan-400 to-blue-500 w-0 transition-all duration-300"></div>
             </div>
-            <div class="text-xs text-slate-400">
-              Last updated: <span id="lastUpdated">—</span>
-            </div>
-          </div>
-
-        <!-- Results / devices table -->
-        <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg text-slate-100 font-semibold">Scan Results</h3>
-            <div class="text-sm text-slate-300">Devices found: <span id="deviceCount" class="font-medium text-amber-300">0</span></div>
-          </div>
-
-          <div id="resultsContainer" class="space-y-3">
-            <!-- Each device row will be injected by JS -->
-            <div class="text-sm text-slate-400 italic">No results yet — start a scan to see devices here.</div>
+            <span class="text-[11px] font-mono text-cyan-400" id="lastUpdated">—</span>
           </div>
         </div>
 
-        <div id="aiSummary"
-          class="p-3 mt-4 bg-slate-800 rounded border border-black text-slate-200 text-sm">
-        AI summary will appear here...
+        <!-- Terminal Output Stream -->
+        <pre id="log" class="terminal-body">[System] NetScan vulnerability engine ready. Configure target subnet and start scanning.</pre>
+
+        <!-- Terminal Footer Action Bar -->
+        <div class="p-3 bg-[#0b1120] border-t border-[#1e293b] flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <div id="pdfLink"></div>
+            <button id="exportCsvBtn" class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-900/50 transition" onclick="exportCSV()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export CSV
+            </button>
+            <button id="exportJsonBtn" class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-950/60 border border-blue-500/30 text-blue-300 hover:bg-blue-900/50 transition" onclick="exportJSON()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Export JSON
+            </button>
+            <button id="diffBtn" class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-purple-950/60 border border-purple-500/30 text-purple-300 hover:bg-purple-900/50 transition" onclick="showScanDiff()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              Scan Diff
+            </button>
+          </div>
+          
+          <div class="text-[11px] text-slate-500 flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>Real-time Port & CVE Telemetry</span>
+          </div>
+        </div>
+
       </div>
+
+      <!-- Discovered Devices & Vulnerability Matrix -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white tracking-tight">Vulnerability & Host Inventory</h3>
+              <p class="text-xs text-slate-400">Click any host to view detailed CVE advisories & open ports</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-xs font-semibold px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-300">
+            <span>Discovered:</span>
+            <span id="deviceCount" class="font-mono text-cyan-400 font-bold">0</span>
+          </div>
+        </div>
+
+        <div id="resultsContainer" class="space-y-3 mt-4">
+          <!-- Populated by JS renderResults -->
+          <div class="text-center py-10 border border-dashed border-slate-800 rounded-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto text-slate-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p class="text-sm text-slate-400 font-medium">No scan results yet</p>
+            <p class="text-xs text-slate-600 mt-0.5">Click "Start Vulnerability Scan" to discover hosts and identify CVEs</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Security Intelligence & Executive Report -->
+      <div class="glass-panel-glow rounded-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white tracking-tight">AI Threat Intelligence & Executive Summary</h3>
+              <p class="text-xs text-purple-300/70">Generated using Gemini AI security reasoning engine</p>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">AI Powered</span>
+        </div>
+
+        <div id="aiSummary">
+          AI security summary and remediation checklist will automatically generate upon scan completion...
+        </div>
       </div>
 
     </div>
+
   </div>
+
 </div>
 
-<!-- small inline styles to support subtle glass effect -->
-<style>
-  /* slightly darker scrollbar for logs */
-  #log::-webkit-scrollbar { height: 8px; width: 10px; }
-  #log::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.12); border-radius: 8px; }
-</style>
-
-<!-- keep your main.js for functionality -->
+<!-- Core Frontend Application Logic -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}

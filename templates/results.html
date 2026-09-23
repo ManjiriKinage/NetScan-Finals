@@ -1,8 +1,36 @@
 {% extends 'base.html' %}
 {% block content %}
-  <div class="bg-white p-4 rounded shadow">
-    <h2 class="text-xl font-semibold">Scan Results</h2>
-    <p>Download the report: <a href="{{ pdf_url }}" class="text-blue-600 underline">Download PDF</a></p>
-    <pre class="mt-4 bg-slate-100 p-3 rounded">{{ report | tojson(indent=2) }}</pre>
+<div class="max-w-5xl mx-auto py-8 px-4 sm:px-6">
+  <div class="glass-panel-glow rounded-2xl p-8">
+    <div class="flex items-center justify-between pb-6 border-b border-slate-800">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-white tracking-tight">Scan Audit Telemetry</h2>
+          <p class="text-xs text-slate-400">Raw vulnerability inspection dataset & PDF report generation</p>
+        </div>
+      </div>
+      {% if pdf_url %}
+      <a href="{{ pdf_url }}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/25 transition">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+        </svg>
+        Download PDF Report
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="mt-6">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-mono font-semibold uppercase tracking-wider text-slate-400">Structured JSON Output</span>
+        <a href="/" class="text-xs text-cyan-400 hover:underline font-medium">← Return to Dashboard</a>
+      </div>
+      <pre class="terminal-body rounded-xl border border-slate-800 p-4 font-mono text-xs overflow-auto max-h-[500px]">{{ report | tojson(indent=2) }}</pre>
+    </div>
   </div>
+</div>
 {% endblock %}

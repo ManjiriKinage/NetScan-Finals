@@ -62,8 +62,8 @@ function initRiskChart() {
         legend: {
           position: 'bottom',
           labels: {
-            color: '#94a3b8',
-            font: { size: 11 },
+            color: document.body.classList.contains('light-mode') ? '#334155' : '#94a3b8',
+            font: { size: 11, family: 'Plus Jakarta Sans' },
             padding: 12
           }
         }
@@ -171,33 +171,54 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderResults(results) {
   resultsContainer.innerHTML = '';
   if (!results || results.length === 0) {
-    resultsContainer.innerHTML = '<div class="text-sm text-slate-400 italic">No devices found.</div>';
+    resultsContainer.innerHTML = `
+      <div class="text-center py-10 border border-dashed border-slate-800 rounded-xl">
+        <p class="text-sm text-slate-400 font-medium">No devices detected</p>
+        <p class="text-xs text-slate-600 mt-0.5">Verify subnet target or check network connectivity</p>
+      </div>`;
     if (deviceCount) deviceCount.textContent = '0';
     return;
   }
   if (deviceCount) deviceCount.textContent = results.length;
   results.forEach(dev => {
-    const vulnHtml = dev.vulnerabilities.length === 0
-      ? '<div class="text-sm text-green-300">No major vulnerabilities</div>'
-      : '<ul class="text-sm text-rose-200">' + dev.vulnerabilities.slice(0, 3).map(v => `<li>• ${v}</li>`).join('') + (dev.vulnerabilities.length > 3 ? `<li class="text-slate-400">+ ${dev.vulnerabilities.length - 3} more...</li>` : '') + '</ul>';
+    const riskLevel = dev.risk || "Info";
+    const riskBadgeClass = riskLevel === 'Critical' ? 'badge-critical' : riskLevel === 'High' ? 'badge-high' : riskLevel === 'Medium' ? 'badge-medium' : 'badge-low';
+    
+    const vulnHtml = (!dev.vulnerabilities || dev.vulnerabilities.length === 0)
+      ? '<div class="text-xs text-emerald-400 font-medium flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>No critical vulnerabilities detected</div>'
+      : '<div class="space-y-1">' + dev.vulnerabilities.slice(0, 3).map(v => `<div class="text-xs text-slate-300 flex items-start gap-1.5"><span class="text-rose-400 mt-0.5">▸</span><span class="truncate">${v}</span></div>`).join('') + (dev.vulnerabilities.length > 3 ? `<div class="text-[11px] text-slate-400 pl-3.5 font-medium">+ ${dev.vulnerabilities.length - 3} additional advisories...</div>` : '') + '</div>';
 
     // OS badge
     const osBadge = dev.os && dev.os.name
-      ? `<span class="text-xs px-2 py-0.5 rounded bg-indigo-800 text-indigo-200 ml-2">${dev.os.name}</span>`
+      ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-950/80 border border-indigo-500/30 text-indigo-300">${dev.os.name}</span>`
       : '';
 
+    // Services count
+    const svcCount = (dev.services || []).length;
+    const svcBadge = `<span class="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700">${svcCount} open port${svcCount === 1 ? '' : 's'}</span>`;
+
     const el = document.createElement('div');
-    // use border-black to match your theme
-    el.className = 'p-3 bg-slate-900/30 rounded border border-black device-row';
+    el.className = 'device-card';
+    el.setAttribute('data-risk', riskLevel);
     el.innerHTML = `
-      <div class="flex items-center justify-between">
-        <div class="font-medium text-slate-100">${dev.host}${osBadge}</div>
-        <span class="text-xs px-2 py-0.5 rounded bg-slate-700 text-white">
-          ${dev.risk || "Info"}
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+        <div class="flex items-center gap-2">
+          <div class="w-2.5 h-2.5 rounded-full ${riskLevel === 'Critical' ? 'bg-rose-500 animate-pulse' : riskLevel === 'High' ? 'bg-orange-500' : riskLevel === 'Medium' ? 'bg-amber-400' : 'bg-emerald-400'}"></div>
+          <span class="font-mono font-bold text-sm text-white">${dev.host}</span>
+          ${osBadge}
+          ${svcBadge}
+        </div>
+        <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${riskBadgeClass}">
+          ${riskLevel} Risk
         </span>
       </div>
-      <div class="mt-2">${vulnHtml}</div>
-      <div class="text-xs text-slate-500 mt-1">Click for details →</div>
+      <div class="pl-4 border-l border-slate-800 my-2">${vulnHtml}</div>
+      <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-800/60 text-[11px] text-slate-400">
+        <span>Severity Score: <strong class="${(dev.severity_score || 0) >= 7 ? 'text-rose-400' : (dev.severity_score || 0) >= 4 ? 'text-amber-400' : 'text-emerald-400'} font-mono">${dev.severity_score || 0}/10</strong></span>
+        <span class="text-cyan-400 font-medium group-hover:underline flex items-center gap-1">
+          Inspect Host Telemetry →
+        </span>
+      </div>
     `;
     el.addEventListener('click', () => openDeviceModal(dev));
     resultsContainer.appendChild(el);
@@ -449,7 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sunIcon = document.getElementById('themeIconSun');
 
   // Restore saved theme
-  if (localStorage.getItem('netscan-theme') === 'light') {
+  const isSavedLight = localStorage.getItem('netscan-theme') === 'light';
+  if (isSavedLight) {
     document.body.classList.add('light-mode');
     if (moonIcon) moonIcon.classList.add('hidden');
     if (sunIcon) sunIcon.classList.remove('hidden');
@@ -464,6 +486,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (moonIcon && sunIcon) {
         moonIcon.classList.toggle('hidden', isLight);
         sunIcon.classList.toggle('hidden', !isLight);
+      }
+
+      if (riskChart) {
+        riskChart.options.plugins.legend.labels.color = isLight ? '#334155' : '#94a3b8';
+        riskChart.update();
       }
     };
   }
@@ -495,14 +522,14 @@ async function startScan() {
 
   isScanning = true;
   scanBtn.innerHTML = "Cancel Scan";
-  scanBtn.classList.remove("from-rose-500","via-orange-400","to-amber-300");
-  scanBtn.classList.add("bg-rose-600");
+  scanBtn.classList.remove("from-cyan-500", "via-blue-600", "to-indigo-600");
+  scanBtn.classList.add("bg-rose-600", "hover:bg-rose-700");
 
   // Status → Scanning
   const mail = document.getElementById("mailStatus");
   if (mail) {
     mail.textContent = "Scanning...";
-    mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-amber-500 text-black";
+    mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
   }
 
   try {
@@ -547,7 +574,7 @@ async function cancelScan() {
     const mail = document.getElementById("mailStatus");
     if (mail) {
       mail.textContent = "Cancelling...";
-      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-orange-500 text-white";
+      mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30";
     }
 
     // Don't call resetUI() — keep polling alive so the frontend
@@ -567,16 +594,16 @@ function resetUI() {
   currentJob = null;
 
   // Reset button
-  scanBtn.innerHTML = "Start Scan";
-  scanBtn.classList.remove("bg-rose-600");
-  scanBtn.classList.add("from-rose-500","via-orange-400","to-amber-300");
+  scanBtn.innerHTML = "Start Vulnerability Scan";
+  scanBtn.classList.remove("bg-rose-600", "hover:bg-rose-700");
+  scanBtn.classList.add("from-cyan-500", "via-blue-600", "to-indigo-600");
 
   // Status → Idle
   const mail = document.getElementById("mailStatus");
 
   if (mail) {
     mail.textContent = "Idle";
-    mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-slate-500 text-white";
+    mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300 border border-slate-700";
   }
 
   // Reset progress
@@ -665,12 +692,12 @@ async function pollStatus(jobId) {
 
       if (data.logs.some(l => l.includes("Report emailed successfully"))) {
         mail.textContent = "Email Sent";
-        mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+        mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
       }
 
       if (data.logs.some(l => l.includes("Email failed"))) {
         mail.textContent = "Email Failed";
-        mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-rose-500 text-white";
+        mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30";
       }
     }
     // pdf link
@@ -678,14 +705,12 @@ async function pollStatus(jobId) {
   pdfLink.innerHTML = `
     <button
       onclick="window.location.href='${data.pdf}'"
-      class="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium
-             bg-emerald-500 hover:bg-emerald-600 text-white shadow border border-black">
-      <!-- icon -->
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-        <path d="M3 14a1 1 0 011-1h3v-8a1 1 0 112 0v8h3a1 1 0 011 1v2H3v-2z" />
-        <path d="M7 11l3 3 3-3H7z" />
+      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+             bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-md shadow-cyan-500/20 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
       </svg>
-      Download Report
+      Download PDF Report
     </button>
   `;
 
@@ -724,19 +749,19 @@ if (data.status === 'done' || data.status === 'cancelled') {
   }
 
   // Reset button (re-enable in case cancel disabled it)
-  scanBtn.innerHTML = "Start Scan";
+  scanBtn.innerHTML = "Start Vulnerability Scan";
   scanBtn.disabled = false;
-  scanBtn.classList.remove("bg-rose-600");
-  scanBtn.classList.add("from-rose-500","via-orange-400","to-amber-300");
+  scanBtn.classList.remove("bg-rose-600", "hover:bg-rose-700");
+  scanBtn.classList.add("from-cyan-500", "via-blue-600", "to-indigo-600");
 
   const mail = document.getElementById("mailStatus");
   if (mail) {
     if (data.status === 'cancelled') {
       mail.textContent = "Cancelled (Partial)";
-      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-orange-500 text-white";
+      mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30";
     } else {
       mail.textContent = "Completed";
-      mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-green-500 text-white";
+      mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
     }
   }
 
@@ -928,14 +953,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Update scan button
         scanBtn.innerHTML = "Cancel Scan";
-        scanBtn.classList.remove("from-rose-500","via-orange-400","to-amber-300");
-        scanBtn.classList.add("bg-rose-600");
+        scanBtn.classList.remove("from-cyan-500", "via-blue-600", "to-indigo-600");
+        scanBtn.classList.add("bg-rose-600", "hover:bg-rose-700");
 
         // Update mail status
         const mail = document.getElementById("mailStatus");
         if (mail) {
           mail.textContent = "Scanning...";
-          mail.className = "ml-2 inline-block px-2 py-0.5 rounded bg-amber-500 text-black";
+          mail.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
         }
 
         appendLog("Scan started via NetBot. Job: " + jobId);

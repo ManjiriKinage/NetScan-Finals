@@ -1,157 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NetScan - Enterprise Security Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
 </head>
 
-<body class="min-h-screen flex bg-slate-900 text-white overflow-x-hidden">
+<body class="min-h-screen bg-[#070b14] text-slate-100 flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-black">
 
-  <!-- LEFT SIDE – LOGIN BOX -->
-  <div class="w-1/2 flex items-center justify-center bg-slate-900 relative">
-
-    <div class="bg-slate-800/70 backdrop-blur-xl 
-    border border-slate-700 shadow-2xl 
-    p-10 rounded-2xl w-[420px] transition duration-500 hover:scale-[1.02]">
-
-      <h2 class="text-2xl font-semibold mb-6 text-center">
-        Admin Login
-      </h2>
-
-      <div class="space-y-4">
-        <input id="email" type="email" placeholder="Email"
-          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
-          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
-          transition duration-300 outline-none">
-
-        <input id="password" type="password" placeholder="Password"
-          class="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 
-          placeholder-slate-400 focus:ring-2 focus:ring-sky-500 
-          transition duration-300 outline-none">
-      </div>
-
-      <button onclick="login()" 
-        class="mt-6 w-full py-3 rounded-lg font-medium
-        bg-sky-600 hover:bg-sky-700 
-        transition duration-300 shadow-lg">
-        Login
-      </button>
-
-      <div class="text-center mt-4">
-        <a href="/guest" class="text-slate-400 hover:text-sky-400 transition text-sm">
-          Continue as Guest
-        </a>
-      </div>
-
-      <p class="text-center text-sm text-slate-400 mt-6">
-        Don’t have an account?
-        <a href="/register" class="text-sky-400 hover:text-sky-300 transition">
-          Register
-        </a>
-      </p>
-
-    </div>
+  <!-- Background Cyber Mesh & Glows -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 -left-40 w-96 h-96 bg-cyan-500/15 rounded-full blur-[120px]"></div>
+    <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-500/15 rounded-full blur-[120px]"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[150px]"></div>
   </div>
 
-  <!-- RIGHT SIDE – MOVING TEXT -->
-  <div class="w-1/2 flex items-center justify-center bg-slate-800 relative overflow-hidden">
-
-    <!-- Moving keywords -->
-    <div class="absolute inset-0 opacity-20">
-      <div class="animate-marquee whitespace-nowrap text-3xl font-semibold text-sky-400">
-        Real-Time Network Monitoring • CVE Intelligence • 
-        Threat Detection • Vulnerability Scanning • 
-        AI Risk Summary • Startup Security • 
-        Automated Reports • 
-      </div>
-    </div>
-
-    <div class="relative z-10 text-center px-12">
-      <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-sky-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-        Secure Your Network
-      </h1>
+  <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 glass-panel-glow rounded-3xl overflow-hidden relative z-10 shadow-2xl border border-white/10">
+    
+    <!-- LEFT SIDE: LOGIN FORM (5 cols) -->
+    <div class="lg:col-span-5 p-8 sm:p-12 flex flex-col justify-between bg-[#090d16]/90">
       
-      <p class="text-slate-300 text-lg leading-relaxed mb-12">
-        NetScan helps startups detect vulnerabilities, prioritize risks, and secure infrastructure with intelligent scanning.
-      </p>
-
-      <!-- Features Grid -->
-      <div class="grid grid-cols-2 gap-6 mt-12">
-        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
-          <i class="fas fa-network-wired text-3xl text-sky-400 mb-3"></i>
-          <h3 class="font-semibold text-sky-300 mb-2">Real-Time Scanning</h3>
-          <p class="text-slate-400 text-sm">Instant vulnerability detection</p>
+      <!-- Brand -->
+      <div>
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-[1px] shadow-lg shadow-cyan-500/25">
+            <div class="w-full h-full bg-[#090d16] rounded-[11px] flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white tracking-tight">NetScan</h1>
+            <p class="text-xs text-slate-400 font-medium">Vulnerability Management Platform</p>
+          </div>
         </div>
 
-        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
-          <i class="fas fa-brain text-3xl text-purple-400 mb-3"></i>
-          <h3 class="font-semibold text-purple-300 mb-2">AI-Powered</h3>
-          <p class="text-slate-400 text-sm">Smart threat prioritization</p>
+        <div class="mb-6">
+          <h2 class="text-2xl font-bold text-white tracking-tight">Security Access</h2>
+          <p class="text-xs text-slate-400 mt-1">Sign in with your administrator credentials to access the scan control center.</p>
         </div>
 
-        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
-          <i class="fas fa-bolt text-3xl text-pink-400 mb-3"></i>
-          <h3 class="font-semibold text-pink-300 mb-2">Lightning Fast</h3>
-          <p class="text-slate-400 text-sm">Rapid analysis and reports</p>
+        <!-- Inputs -->
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Admin Email</label>
+            <div class="relative">
+              <input id="email" type="email" placeholder="admin@netscan.internal"
+                class="glass-input w-full p-3 pl-10 rounded-xl text-slate-100 text-sm font-sans placeholder-slate-500 outline-none" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">Master Key / Password</label>
+            <div class="relative">
+              <input id="password" type="password" placeholder="••••••••••••"
+                class="glass-input w-full p-3 pl-10 rounded-xl text-slate-100 text-sm font-sans placeholder-slate-500 outline-none" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+          </div>
+
+          <button onclick="login()" 
+            class="w-full mt-2 py-3 rounded-xl font-bold text-sm text-white shadow-lg shadow-cyan-500/25 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 transition-all duration-300 transform active:scale-[0.98]">
+            Authenticate & Open Dashboard
+          </button>
         </div>
 
-        <div class="bg-slate-800/40 backdrop-blur border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/60 transition">
-          <i class="fas fa-lock-open text-3xl text-orange-400 mb-3"></i>
-          <h3 class="font-semibold text-orange-300 mb-2">Security First</h3>
-          <p class="text-slate-400 text-sm">Enterprise-grade protection</p>
+        <!-- Guest Access Pill -->
+        <div class="mt-6 text-center">
+          <a href="/guest" class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition">
+            <span>Continue as Guest Analyst</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </a>
         </div>
       </div>
+
+      <!-- Footer Link -->
+      <div class="mt-8 pt-6 border-t border-slate-800 text-center text-xs text-slate-400">
+        Need an administrator account?
+        <a href="/register" class="text-cyan-400 hover:text-cyan-300 font-semibold ml-1 hover:underline">
+          Register Key
+        </a>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDE: CYBER INTELLIGENCE SHOWCASE (7 cols) -->
+    <div class="hidden lg:flex lg:col-span-7 p-12 bg-gradient-to-br from-[#0c1427] via-[#090d16] to-[#050811] border-l border-white/5 flex-col justify-between relative overflow-hidden">
+      
+      <!-- Subtle Cyber Grid -->
+      <div class="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-30"></div>
+
+      <!-- Top Badge -->
+      <div class="relative z-10 flex items-center justify-between">
+        <span class="text-xs font-mono text-cyan-400 uppercase tracking-widest px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-800/60">
+          Autonomous Security Core
+        </span>
+        <span class="text-xs text-slate-500 font-mono">TLS 1.3 · SHA-256</span>
+      </div>
+
+      <!-- Center Hero Content -->
+      <div class="relative z-10 my-8">
+        <h2 class="text-4xl font-extrabold tracking-tight text-white leading-tight">
+          Next-Gen Local Network <br />
+          <span class="bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+            Threat & CVE Intelligence
+          </span>
+        </h2>
+        <p class="text-slate-400 text-sm mt-4 leading-relaxed max-w-md">
+          Discover hidden subnet devices, evaluate risk scores with CVSS telemetry, and obtain AI-powered remediation checklists in seconds.
+        </p>
+
+        <!-- Feature Grid Cards -->
+        <div class="grid grid-cols-2 gap-4 mt-8">
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur">
+            <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h4 class="text-xs font-bold text-white">Real-Time Nmap Engine</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Automated port & service banner analysis</p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 backdrop-blur">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h4 class="text-xs font-bold text-white">AI Remediation</h4>
+            <p class="text-[11px] text-slate-400 mt-0.5">Gemini-backed threat explanation & fixes</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Security Tag -->
+      <div class="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-4 border-t border-slate-800/80">
+        <span>Protected by NetScan Enterprise Guard</span>
+        <span class="flex items-center gap-1 text-emerald-400">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> 100% Operational
+        </span>
+      </div>
+
     </div>
 
   </div>
 
-<script>
-async function login(){
-  const res = await fetch("/admin/login", {
-    method:"POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({
-      email: email.value,
-      password: password.value
-    })
-  });
+  <script>
+  async function login(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
-  if(res.ok){
-    window.location.href="/";
-  } else {
-    alert("Invalid credentials");
+    if (!email || !password) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (res.ok) {
+        window.location.href = "/";
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Invalid credentials. Please verify your email and password.");
+      }
+    } catch (err) {
+      alert("Authentication request failed: " + err);
+    }
   }
-}
-</script>
 
-<style>
-@keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
-}
-
-@keyframes blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-}
-
-.animate-marquee {
-  display: inline-block;
-  animation: marquee 25s linear infinite;
-}
-
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-</style>
+  document.getElementById("password")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") login();
+  });
+  </script>
 
 </body>
 </html>
